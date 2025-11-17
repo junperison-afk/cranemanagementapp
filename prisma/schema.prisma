@@ -203,13 +203,14 @@ model Equipment {
   @@map("equipment")
 }
 
-// 点検記録
+// 点検記録（点検・修理・メンテナンスなどの作業記録を含む）
 model InspectionRecord {
   id              String            @id @default(cuid())
   equipmentId     String
   userId          String            // 担当者
-  inspectionDate  DateTime          // 点検日
-  overallJudgment InspectionJudgment // 総合判定
+  workType        WorkType          @default(INSPECTION) // 作業タイプ
+  inspectionDate  DateTime          // 作業日（点検日・修理日など）
+  overallJudgment InspectionJudgment? // 総合判定（点検の場合のみ）
   findings        String?           // 所見
   summary         String?           // 結果サマリ
   additionalNotes String?           // 追加項目メモ
@@ -223,6 +224,13 @@ model InspectionRecord {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("inspection_records")
+}
+
+enum WorkType {
+  INSPECTION  // 点検
+  REPAIR      // 修理
+  MAINTENANCE // メンテナンス
+  OTHER       // その他
 }
 
 enum InspectionJudgment {

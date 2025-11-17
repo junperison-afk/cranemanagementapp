@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthSessionProvider } from "@/components/providers/session-provider";
+import TopLoadingBar from "@/components/layout/top-loading-bar";
 
 export const metadata: Metadata = {
   title: "クレーン管理システム",
@@ -14,7 +15,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja">
-      <body>
+      <body className="antialiased">
+        <TopLoadingBar />
         <AuthSessionProvider>{children}</AuthSessionProvider>
       </body>
     </html>

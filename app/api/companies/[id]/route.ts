@@ -1,0 +1,163 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/auth-helpers";
+import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const companySchema = z.object({
+  name: z.string().min(1, "会社名は必須です").optional(),
+  postalCode: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email("有効なメールアドレスを入力してください").optional().or(z.literal("")),
+  industryType: z.string().optional(),
+  billingFlag: z.boolean().optional(),
+  notes: z.string().optional(),
+});
+
+// GET: 取引先詳細取得
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    const company = await prisma.company.findUnique({
+      where: { id: params.id },
+      include: {
+        contacts: {
+          orderBy: {
+            createdAt: "desc",
+          },
+        },
+        salesOpportunities: {
+          take: 10,
+          orderBy: {
+            updatedAt: "desc",
+          },
+        },
+        equipment: {
+          take: 10,
+          orderBy: {
+            updatedAt: "desc",
+          },
+        },
+        projects: {
+          take: 10,
+          orderBy: {
+            updatedAt: "desc",
+          },
+          include: {
+            assignedUser: true,
+          },
+        },
+        _count: {
+          select: {
+            contacts: true,
+            salesOpportunities: true,
+            equipment: true,
+            projects: true,
+          },
+        },
+      },
+    });
+
+    if (!company) {
+      return NextResponse.json(
+        { error: "取引先が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(company);
+  } catch (error) {
+    console.error("取引先詳細取得エラー:", error);
+    return NextResponse.json(
+      { error: "取引先詳細の取得に失敗しました" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT: 取引先更新
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    // 編集者以上の権限が必要
+    if (session.user.role === "VIEWER") {
+      return NextResponse.json(
+        { error: "この操作を実行する権限がありません" },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const validatedData = companySchema.parse(body);
+
+    const company = await prisma.company.update({
+      where: { id: params.id },
+      data: {
+        ...validatedData,
+        email: validatedData.email || undefined,
+      },
+    });
+
+    return NextResponse.json(company);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "バリデーションエラー", details: error.errors },
+        { status: 400 }
+      );
+    }
+    console.error("取引先更新エラー:", error);
+    return NextResponse.json(
+      { error: "取引先の更新に失敗しました" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE: 取引先削除
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    // 管理者のみ削除可能
+    if (session.user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "この操作を実行する権限がありません" },
+        { status: 403 }
+      );
+    }
+
+    await prisma.company.delete({
+      where: { id: params.id },
+    });
+
+    return NextResponse.json({ message: "取引先を削除しました" });
+  } catch (error) {
+    console.error("取引先削除エラー:", error);
+    return NextResponse.json(
+      { error: "取引先の削除に失敗しました" },
+      { status: 500 }
+    );
+  }
+}
+
