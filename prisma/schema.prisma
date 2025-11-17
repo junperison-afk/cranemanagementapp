@@ -1,0 +1,234 @@
+// Prismaスキーマ定義
+// 天井クレーン点検管理システム
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ユーザー（システム利用者）
+model User {
+  id            String            @id @default(cuid())
+  email         String            @unique
+  name          String?
+  password      String            // ハッシュ化されたパスワード
+  role          UserRole          @default(VIEWER)
+  phone         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // リレーション
+  inspectionRecords InspectionRecord[]
+  projects         Project[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN   // 管理者
+  EDITOR  // 編集者
+  VIEWER  // 閲覧者
+}
+
+// 取引先
+model Company {
+  id              String              @id @default(cuid())
+  name            String              // 会社名
+  postalCode      String?
+  address         String?             // 所在地
+  phone           String?
+  email           String?
+  industryType    String?             // 業種区分
+  billingFlag     Boolean             @default(false) // 請求関連フラグ
+  notes           String?             // 備考
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // リレーション
+  contacts            CompanyContact[]
+  salesOpportunities  SalesOpportunity[]
+  equipment           Equipment[]
+  projects            Project[]
+
+  @@map("companies")
+}
+
+// 取引先担当者
+model CompanyContact {
+  id            String    @id @default(cuid())
+  companyId     String
+  name          String    // 氏名
+  position      String?   // 役職
+  phone         String?
+  email         String?
+  notes         String?   // 対応履歴メモ
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // リレーション
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_contacts")
+}
+
+// 営業案件
+model SalesOpportunity {
+  id              String          @id @default(cuid())
+  companyId       String
+  title           String          // 案件タイトル
+  status          OpportunityStatus @default(ESTIMATING) // 見積中／受注／失注
+  estimatedAmount Decimal?        @db.Decimal(10, 2) // 想定金額
+  craneCount      Int?            // 対象クレーン台数
+  craneInfo       String?         // クレーン情報（型式・概要）
+  occurredAt      DateTime?       // 発生日
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // リレーション
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  quotes    SalesQuote[]
+  contract  Contract?
+  project   Project?
+
+  @@map("sales_opportunities")
+}
+
+enum OpportunityStatus {
+  ESTIMATING  // 見積中
+  WON         // 受注
+  LOST        // 失注
+}
+
+// 見積情報
+model SalesQuote {
+  id                  String        @id @default(cuid())
+  salesOpportunityId  String
+  quoteNumber         String        @unique // 見積番号（Q-YYYYMM-XXXX形式）
+  amount              Decimal       @db.Decimal(10, 2) // 金額
+  conditions          String?       // 条件
+  status              QuoteStatus   @default(DRAFT) // ステータス
+  validUntil          DateTime?     // 有効期限
+  notes               String?       // 備考
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  // リレーション
+  salesOpportunity SalesOpportunity @relation(fields: [salesOpportunityId], references: [id], onDelete: Cascade)
+  contracts        Contract[]
+
+  @@map("sales_quotes")
+}
+
+enum QuoteStatus {
+  DRAFT      // 下書き
+  SENT       // 送信済み
+  ACCEPTED   // 承認済み
+  REJECTED   // 却下
+}
+
+// 受注書（契約）
+model Contract {
+  id                  String    @id @default(cuid())
+  salesOpportunityId  String    @unique // 営業案件と1:1
+  salesQuoteId       String?   // 採用見積参照
+  contractNumber     String    @unique // 契約番号
+  contractDate       DateTime  // 受注日
+  conditions         String?   // 契約条件
+  documentPath       String?   // 帳票リンク（PDFパス等）
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // リレーション
+  salesOpportunity SalesOpportunity @relation(fields: [salesOpportunityId], references: [id], onDelete: Cascade)
+  salesQuote      SalesQuote?       @relation(fields: [salesQuoteId], references: [id], onDelete: SetNull)
+
+  @@map("contracts")
+}
+
+// プロジェクト
+model Project {
+  id              String          @id @default(cuid())
+  salesOpportunityId String?      @unique // 営業案件と1:1（受注時に自動生成）
+  companyId       String
+  assignedUserId  String?         // 担当メンバー
+  title           String          // プロジェクトタイトル
+  status          ProjectStatus   @default(PLANNING) // 計画中／進行中／保留／完了
+  startDate       DateTime?
+  endDate         DateTime?
+  amount          Decimal?        @db.Decimal(10, 2) // 金額
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // リレーション
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  assignedUser    User?           @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  salesOpportunity SalesOpportunity? @relation(fields: [salesOpportunityId], references: [id], onDelete: SetNull)
+  equipment       Equipment[]
+
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  PLANNING   // 計画中
+  IN_PROGRESS // 進行中
+  ON_HOLD    // 保留
+  COMPLETED  // 完了
+}
+
+// 機器（クレーン）
+model Equipment {
+  id              String    @id @default(cuid())
+  companyId       String
+  projectId       String?   // 現在紐付くプロジェクトID
+  name            String    // 機器名称
+  model           String?   // 機種・型式
+  serialNumber    String?   // 製造番号
+  location        String?   // 設置場所
+  specifications  String?   // 仕様情報（JSON形式で保存可能）
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // リレーション
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project           Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  inspectionRecords InspectionRecord[]
+
+  @@map("equipment")
+}
+
+// 点検記録
+model InspectionRecord {
+  id              String            @id @default(cuid())
+  equipmentId     String
+  userId          String            // 担当者
+  inspectionDate  DateTime          // 点検日
+  overallJudgment InspectionJudgment // 総合判定
+  findings        String?           // 所見
+  summary         String?           // 結果サマリ
+  additionalNotes String?           // 追加項目メモ
+  checklistData   String?           // チェックリストデータ（JSON形式）
+  photos          String?            // 写真パス（カンマ区切りまたはJSON）
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // リレーション
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("inspection_records")
+}
+
+enum InspectionJudgment {
+  GOOD      // 良好
+  CAUTION   // 注意
+  BAD       // 不良
+  REPAIR    // 要修理
+}
+

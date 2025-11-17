@@ -1,0 +1,91 @@
+# 依存関係
+node_modules/
+vendor/
+composer.lock
+package-lock.json
+yarn.lock
+
+# 環境変数
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ログファイル
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ビルド出力
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# キャッシュ
+.cache/
+.parcel-cache/
+.npm/
+.eslintcache
+.phpunit.result.cache
+
+# エディタ・IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 一時ファイル
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# データベース
+*.sqlite
+*.db
+*.sql
+
+# アップロードファイル・メディア
+uploads/
+storage/app/public
+public/storage
+public/uploads
+
+# テストカバレッジ
+coverage/
+.nyc_output/
+*.lcov
+
+# PWA
+sw.js
+workbox-*.js
+precache-manifest.*.js
+
+# 認証情報・秘密鍵
+*.pem
+*.key
+*.crt
+config/secrets.php
+
+# OCR関連（一時ファイル）
+ocr_tmp/
+temp_images/
+
+# レポート・PDF（生成物）
+reports/*.pdf
+!reports/.gitkeep
+generated_documents/
+
+# デバッグ
+.phpstorm.meta.php
+.php_cs.cache
+.phpmd.result.xml
+
