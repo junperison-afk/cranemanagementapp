@@ -16,6 +16,7 @@ export default async function CompaniesPage({
   searchParams: {
     search?: string;
     page?: string;
+    limit?: string;
     industryType?: string;
     billingFlag?: string;
     hasSalesOpportunities?: string;

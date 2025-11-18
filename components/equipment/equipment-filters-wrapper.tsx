@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { EquipmentFilterButton, EquipmentFilterPanel } from "./equipment-filters";
+import FilterButton from "@/components/common/filter-button";
+import FilterPanelWrapper from "@/components/common/filter-panel-wrapper";
+import { EquipmentFilterPanel } from "./equipment-filters";
 
 export function EquipmentFilterButtonWrapper() {
   const router = useRouter();
@@ -24,7 +26,7 @@ export function EquipmentFilterButtonWrapper() {
   };
 
   return (
-    <EquipmentFilterButton
+    <FilterButton
       onToggle={toggleFilter}
       activeFilterCount={activeFilterCount}
     />
@@ -43,19 +45,9 @@ export function EquipmentFilterPanelWrapper() {
   };
 
   return (
-    <div
-      className={`overflow-hidden flex-shrink-0 h-full transition-all duration-300 ease-in-out ${
-        isFilterOpen ? "w-80" : "w-0"
-      }`}
-    >
-      <div
-        className={`h-full transition-transform duration-300 ease-in-out ${
-          isFilterOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <EquipmentFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
-      </div>
-    </div>
+    <FilterPanelWrapper isOpen={isFilterOpen}>
+      <EquipmentFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+    </FilterPanelWrapper>
   );
 }
 

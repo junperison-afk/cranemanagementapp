@@ -30,13 +30,17 @@ export default function PaginationHeader({
           value={limit}
           onChange={(e) => {
             const params = new URLSearchParams();
+            // 既存の検索パラメータを保持（limitとpage以外）
             Object.entries(searchParams).forEach(([key, value]) => {
               if (value && key !== "limit" && key !== "page") {
                 params.set(key, value);
               }
             });
+            // 新しいlimitを設定
             params.set("limit", e.target.value);
-            params.delete("page");
+            // ページを1にリセット
+            params.set("page", "1");
+            // URLを更新
             window.location.href = `${basePath}?${params.toString()}`;
           }}
           className="px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -47,7 +51,7 @@ export default function PaginationHeader({
           <option value="100">100 件/ページ</option>
         </select>
         <div className="text-sm text-gray-700">
-          {totalPages > 0 ? `${page} - ${page}` : "0 - 0"}
+          {totalPages > 0 ? `${page} - ${totalPages}` : "0 - 0"}
         </div>
         <div className="flex gap-1">
           <Link

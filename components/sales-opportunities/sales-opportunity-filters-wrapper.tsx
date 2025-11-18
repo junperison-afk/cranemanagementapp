@@ -1,10 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  SalesOpportunityFilterButton,
-  SalesOpportunityFilterPanel,
-} from "./sales-opportunity-filters";
+import FilterButton from "@/components/common/filter-button";
+import FilterPanelWrapper from "@/components/common/filter-panel-wrapper";
+import { SalesOpportunityFilterPanel } from "./sales-opportunity-filters";
 
 export function SalesOpportunityFilterButtonWrapper() {
   const router = useRouter();
@@ -29,7 +28,7 @@ export function SalesOpportunityFilterButtonWrapper() {
   };
 
   return (
-    <SalesOpportunityFilterButton
+    <FilterButton
       onToggle={toggleFilter}
       activeFilterCount={activeFilterCount}
     />
@@ -48,19 +47,9 @@ export function SalesOpportunityFilterPanelWrapper() {
   };
 
   return (
-    <div
-      className={`overflow-hidden flex-shrink-0 h-full transition-all duration-300 ease-in-out ${
-        isFilterOpen ? "w-80" : "w-0"
-      }`}
-    >
-      <div
-        className={`h-full transition-transform duration-300 ease-in-out ${
-          isFilterOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <SalesOpportunityFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
-      </div>
-    </div>
+    <FilterPanelWrapper isOpen={isFilterOpen}>
+      <SalesOpportunityFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+    </FilterPanelWrapper>
   );
 }
 

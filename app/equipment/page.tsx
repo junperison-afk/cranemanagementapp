@@ -16,6 +16,7 @@ export default async function EquipmentPage({
   searchParams: {
     search?: string;
     page?: string;
+    limit?: string;
     companyId?: string;
     projectId?: string;
   };

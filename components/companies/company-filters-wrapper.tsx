@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { CompanyFilterButton, CompanyFilterPanel } from "./company-filters";
+import FilterButton from "@/components/common/filter-button";
+import FilterPanelWrapper from "@/components/common/filter-panel-wrapper";
+import { CompanyFilterPanel } from "./company-filters";
 
 export function CompanyFilterButtonWrapper() {
   const router = useRouter();
@@ -29,7 +31,7 @@ export function CompanyFilterButtonWrapper() {
   };
 
   return (
-    <CompanyFilterButton
+    <FilterButton
       onToggle={toggleFilter}
       activeFilterCount={activeFilterCount}
     />
@@ -48,19 +50,9 @@ export function CompanyFilterPanelWrapper() {
   };
 
   return (
-    <div
-      className={`overflow-hidden flex-shrink-0 h-full transition-all duration-300 ease-in-out ${
-        isFilterOpen ? "w-80" : "w-0"
-      }`}
-    >
-      <div
-        className={`h-full transition-transform duration-300 ease-in-out ${
-          isFilterOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <CompanyFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
-      </div>
-    </div>
+    <FilterPanelWrapper isOpen={isFilterOpen}>
+      <CompanyFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+    </FilterPanelWrapper>
   );
 }
 

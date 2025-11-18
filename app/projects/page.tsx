@@ -16,6 +16,7 @@ export default async function ProjectsPage({
   searchParams: {
     search?: string;
     page?: string;
+    limit?: string;
     status?: string;
     companyId?: string;
     assignedUserId?: string;

@@ -1,7 +1,9 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { ContactFilterButton, ContactFilterPanel } from "./contact-filters";
+import FilterButton from "@/components/common/filter-button";
+import FilterPanelWrapper from "@/components/common/filter-panel-wrapper";
+import { ContactFilterPanel } from "./contact-filters";
 
 export function ContactFilterButtonWrapper() {
   const router = useRouter();
@@ -23,7 +25,7 @@ export function ContactFilterButtonWrapper() {
   };
 
   return (
-    <ContactFilterButton
+    <FilterButton
       onToggle={toggleFilter}
       activeFilterCount={activeFilterCount}
     />
@@ -41,8 +43,10 @@ export function ContactFilterPanelWrapper() {
     router.push(`/contacts?${params.toString()}`);
   };
 
-  if (!isFilterOpen) return null;
-
-  return <ContactFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />;
+  return (
+    <FilterPanelWrapper isOpen={isFilterOpen}>
+      <ContactFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+    </FilterPanelWrapper>
+  );
 }
 

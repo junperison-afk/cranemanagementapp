@@ -4,6 +4,10 @@ import MainLayout from "@/components/layout/main-layout";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { PlusIcon } from "@heroicons/react/24/outline";
+import {
+  WorkRecordFilterButtonWrapper,
+  WorkRecordFilterPanelWrapper,
+} from "@/components/work-records/work-record-filters-wrapper";
 import WorkRecordTable from "@/components/work-records/work-record-table";
 
 export default async function WorkRecordsPage({
@@ -12,6 +16,7 @@ export default async function WorkRecordsPage({
   searchParams: {
     search?: string;
     page?: string;
+    limit?: string;
     equipmentId?: string;
     userId?: string;
     workType?: string;
@@ -27,7 +32,7 @@ export default async function WorkRecordsPage({
 
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page || "1");
-  const limit = 20;
+  const limit = parseInt(searchParams.limit || "20");
   const skip = (page - 1) * limit;
 
   // フィルター条件の構築
@@ -162,9 +167,9 @@ export default async function WorkRecordsPage({
 
   return (
     <MainLayout>
-      <div className="space-y-6 h-full flex flex-col">
+      <div className="h-full flex flex-col">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center justify-between flex-shrink-0 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">作業記録一覧</h1>
             <p className="mt-1 text-sm text-gray-500">
@@ -172,6 +177,7 @@ export default async function WorkRecordsPage({
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <WorkRecordFilterButtonWrapper />
             {(session.user.role === "ADMIN" ||
               session.user.role === "EDITOR") && (
               <Link
@@ -185,17 +191,25 @@ export default async function WorkRecordsPage({
           </div>
         </div>
 
-        {/* データテーブル */}
-        <div className="flex-1 min-w-0">
-          <WorkRecordTable
-            workRecords={inspectionRecords}
-            total={total}
-            page={page}
-            limit={limit}
-            skip={skip}
-            totalPages={totalPages}
-            searchParams={searchParams}
-          />
+        {/* データテーブル部分（2分割可能） */}
+        <div className="flex-1 flex gap-0 min-h-0 h-full">
+          {/* フィルターパネル */}
+          <div className="mr-6">
+            <WorkRecordFilterPanelWrapper />
+          </div>
+
+          {/* データテーブル */}
+          <div className="flex-1 min-w-0">
+            <WorkRecordTable
+              workRecords={inspectionRecords}
+              total={total}
+              page={page}
+              limit={limit}
+              skip={skip}
+              totalPages={totalPages}
+              searchParams={searchParams}
+            />
+          </div>
         </div>
       </div>
     </MainLayout>

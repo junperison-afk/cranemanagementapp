@@ -3,21 +3,20 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import FilterButton from "@/components/common/filter-button";
 import FilterPanelWrapper from "@/components/common/filter-panel-wrapper";
-import { ProjectFilterPanel } from "./project-filters";
+import { WorkRecordFilterPanel } from "./work-record-filters";
 
-export function ProjectFilterButtonWrapper() {
+export function WorkRecordFilterButtonWrapper() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isFilterOpen = searchParams.get("filter") === "open";
 
   const activeFilterCount = [
-    searchParams.get("status"),
-    searchParams.get("companyId"),
-    searchParams.get("assignedUserId"),
-    searchParams.get("startDateAfter"),
-    searchParams.get("startDateBefore"),
-    searchParams.get("endDateAfter"),
-    searchParams.get("endDateBefore"),
+    searchParams.get("equipmentId"),
+    searchParams.get("userId"),
+    searchParams.get("workType"),
+    searchParams.get("overallJudgment"),
+    searchParams.get("inspectionDateAfter"),
+    searchParams.get("inspectionDateBefore"),
   ].filter((v) => v).length;
 
   const toggleFilter = () => {
@@ -27,7 +26,7 @@ export function ProjectFilterButtonWrapper() {
     } else {
       params.set("filter", "open");
     }
-    router.push(`/projects?${params.toString()}`);
+    router.push(`/work-records?${params.toString()}`);
   };
 
   return (
@@ -38,7 +37,7 @@ export function ProjectFilterButtonWrapper() {
   );
 }
 
-export function ProjectFilterPanelWrapper() {
+export function WorkRecordFilterPanelWrapper() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isFilterOpen = searchParams.get("filter") === "open";
@@ -46,12 +45,12 @@ export function ProjectFilterPanelWrapper() {
   const closeFilter = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("filter");
-    router.push(`/projects?${params.toString()}`);
+    router.push(`/work-records?${params.toString()}`);
   };
 
   return (
     <FilterPanelWrapper isOpen={isFilterOpen}>
-      <ProjectFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+      <WorkRecordFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
     </FilterPanelWrapper>
   );
 }
