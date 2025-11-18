@@ -68,10 +68,22 @@ export default async function SalesOpportunityDetailPage({
   const canEdit =
     session.user.role === "ADMIN" || session.user.role === "EDITOR";
 
+  // Decimal型をnumber型に変換
+  const salesOpportunityWithNumberAmount = {
+    ...salesOpportunity,
+    estimatedAmount: salesOpportunity.estimatedAmount
+      ? salesOpportunity.estimatedAmount.toNumber()
+      : null,
+    quotes: salesOpportunity.quotes.map((quote) => ({
+      ...quote,
+      amount: quote.amount.toNumber(),
+    })),
+  };
+
   return (
     <MainLayout>
       <ClientSalesOpportunityDetail
-        salesOpportunity={salesOpportunity}
+        salesOpportunity={salesOpportunityWithNumberAmount}
         canEdit={canEdit}
       />
     </MainLayout>

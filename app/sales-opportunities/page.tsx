@@ -103,6 +103,16 @@ export default async function SalesOpportunitiesPage({
 
   const totalPages = Math.ceil(total / limit);
 
+  // Decimal型をnumber型に変換
+  const salesOpportunitiesWithNumberAmount = salesOpportunities.map(
+    (salesOpportunity) => ({
+      ...salesOpportunity,
+      estimatedAmount: salesOpportunity.estimatedAmount
+        ? salesOpportunity.estimatedAmount.toNumber()
+        : null,
+    })
+  );
+
   return (
     <MainLayout>
       <div className="space-y-6 h-full flex flex-col">
@@ -137,7 +147,7 @@ export default async function SalesOpportunitiesPage({
           {/* データテーブル */}
           <div className="flex-1 min-w-0">
             <SalesOpportunityTable
-              salesOpportunities={salesOpportunities}
+              salesOpportunities={salesOpportunitiesWithNumberAmount}
               total={total}
               page={page}
               limit={limit}
