@@ -127,7 +127,7 @@ export default function ClientWorkRecordDetail({
   };
 
   const handleSave = async (field: string, value: any) => {
-    await updateInspectionRecord(field, value);
+    await updateWorkRecord(field, value);
   };
 
   return (
