@@ -123,9 +123,6 @@ export default async function CompaniesPage({
 
   const totalPages = Math.ceil(total / limit);
 
-  // フィルターが開いているかどうか（URLパラメータで管理）
-  const isFilterOpen = searchParams.filter === "open";
-
   return (
     <MainLayout>
       <div className="space-y-6 h-full flex flex-col">
