@@ -2,13 +2,13 @@ import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { PlusIcon } from "@heroicons/react/24/outline";
 import {
   ContactFilterButtonWrapper,
   ContactFilterPanelWrapper,
 } from "@/components/contacts/contact-filters-wrapper";
 import ContactTable from "@/components/contacts/contact-table";
+import CreateButton from "@/components/common/create-button";
+import ContactCreateForm from "@/components/contacts/contact-create-form";
 
 export default async function ContactsPage({
   searchParams,
@@ -91,16 +91,11 @@ export default async function ContactsPage({
           </div>
           <div className="flex items-center gap-3">
             <ContactFilterButtonWrapper />
-            {(session.user.role === "ADMIN" ||
-              session.user.role === "EDITOR") && (
-              <Link
-                href="/contacts/new"
-                className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <PlusIcon className="h-5 w-5" />
-                新規作成
-              </Link>
-            )}
+            <CreateButton
+              title="連絡先を新規作成"
+              formComponent={ContactCreateForm}
+              resourcePath="contacts"
+            />
           </div>
         </div>
 

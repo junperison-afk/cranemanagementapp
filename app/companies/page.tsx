@@ -2,13 +2,13 @@ import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import { PlusIcon } from "@heroicons/react/24/outline";
 import {
   CompanyFilterButtonWrapper,
   CompanyFilterPanelWrapper,
 } from "@/components/companies/company-filters-wrapper";
 import CompanyTable from "@/components/companies/company-table";
+import CreateButton from "@/components/common/create-button";
+import CompanyCreateForm from "@/components/companies/company-create-form";
 
 export default async function CompaniesPage({
   searchParams,
@@ -137,16 +137,11 @@ export default async function CompaniesPage({
           </div>
           <div className="flex items-center gap-3">
             <CompanyFilterButtonWrapper />
-            {(session.user.role === "ADMIN" ||
-              session.user.role === "EDITOR") && (
-              <Link
-                href="/companies/new"
-                className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <PlusIcon className="h-5 w-5" />
-                新規作成
-              </Link>
-            )}
+            <CreateButton
+              title="取引先を新規作成"
+              formComponent={CompanyCreateForm}
+              resourcePath="companies"
+            />
           </div>
         </div>
 
