@@ -75,9 +75,15 @@ export default async function ProjectDetailPage({
   const canEdit =
     session.user.role === "ADMIN" || session.user.role === "EDITOR";
 
+  // Decimal型をnumber型に変換
+  const projectWithNumberAmount = {
+    ...project,
+    amount: project.amount ? project.amount.toNumber() : null,
+  };
+
   return (
     <MainLayout>
-      <ClientProjectDetail project={project} canEdit={canEdit} />
+      <ClientProjectDetail project={projectWithNumberAmount} canEdit={canEdit} />
     </MainLayout>
   );
 }
