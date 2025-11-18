@@ -138,6 +138,12 @@ export default async function ProjectsPage({
 
   const totalPages = Math.ceil(total / limit);
 
+  // Decimal型をnumber型に変換
+  const projectsWithNumberAmount = projects.map((project) => ({
+    ...project,
+    amount: project.amount ? project.amount.toNumber() : null,
+  }));
+
   return (
     <MainLayout>
       <div className="space-y-6 h-full flex flex-col">
@@ -172,7 +178,7 @@ export default async function ProjectsPage({
           {/* データテーブル */}
           <div className="flex-1 min-w-0">
             <ProjectTable
-              projects={projects}
+              projects={projectsWithNumberAmount}
               total={total}
               page={page}
               limit={limit}
