@@ -16,7 +16,9 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log("[Auth] Missing credentials");
+          if (process.env.NODE_ENV !== "production") {
+            console.log("[Auth] Missing credentials");
+          }
           return null;
         }
 
@@ -28,11 +30,15 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
-            console.log(`[Auth] User not found: ${credentials.email}`);
+            if (process.env.NODE_ENV !== "production") {
+              console.log(`[Auth] User not found: ${credentials.email}`);
+            }
             return null;
           }
 
-          console.log(`[Auth] User found: ${user.email}, ID: ${user.id}`);
+          if (process.env.NODE_ENV !== "production") {
+            console.log(`[Auth] User found: ${user.email}, ID: ${user.id}`);
+          }
 
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
@@ -40,11 +46,15 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
-            console.log(`[Auth] Invalid password for: ${credentials.email}`);
+            if (process.env.NODE_ENV !== "production") {
+              console.log(`[Auth] Invalid password for: ${credentials.email}`);
+            }
             return null;
           }
 
-          console.log(`[Auth] Authentication successful for: ${credentials.email}`);
+          if (process.env.NODE_ENV !== "production") {
+            console.log(`[Auth] Authentication successful for: ${credentials.email}`);
+          }
           return {
             id: user.id,
             email: user.email,
@@ -52,6 +62,7 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
           };
         } catch (error) {
+          // エラーは本番環境でもログに記録（デバッグ情報は含めない）
           console.error("[Auth] Error during authentication:", error);
           return null;
         }
