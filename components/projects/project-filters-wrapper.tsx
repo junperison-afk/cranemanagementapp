@@ -47,8 +47,20 @@ export function ProjectFilterPanelWrapper() {
     router.push(`/projects?${params.toString()}`);
   };
 
-  if (!isFilterOpen) return null;
-
-  return <ProjectFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />;
+  return (
+    <div
+      className={`overflow-hidden flex-shrink-0 h-full transition-all duration-300 ease-in-out ${
+        isFilterOpen ? "w-80" : "w-0"
+      }`}
+    >
+      <div
+        className={`h-full transition-transform duration-300 ease-in-out ${
+          isFilterOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <ProjectFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+      </div>
+    </div>
+  );
 }
 

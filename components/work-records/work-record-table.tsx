@@ -75,7 +75,7 @@ export default function WorkRecordTable({
         </div>
       ) : (
         <>
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto border-b border-gray-200">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>

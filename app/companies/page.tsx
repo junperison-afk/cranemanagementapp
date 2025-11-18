@@ -32,7 +32,7 @@ export default async function CompaniesPage({
 
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page || "1");
-  const limit = 20;
+  const limit = parseInt(searchParams.limit || "20");
   const skip = (page - 1) * limit;
 
   // フィルター条件の構築
@@ -125,9 +125,9 @@ export default async function CompaniesPage({
 
   return (
     <MainLayout>
-      <div className="space-y-6 h-full flex flex-col">
+      <div className="h-full flex flex-col">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center justify-between flex-shrink-0 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">取引先一覧</h1>
             <p className="mt-1 text-sm text-gray-500">
@@ -150,9 +150,11 @@ export default async function CompaniesPage({
         </div>
 
         {/* データテーブル部分（2分割可能） */}
-        <div className="flex-1 flex gap-6 min-h-0">
+        <div className="flex-1 flex gap-0 min-h-0 h-full">
           {/* フィルターパネル */}
-          <CompanyFilterPanelWrapper />
+          <div className="mr-6">
+            <CompanyFilterPanelWrapper />
+          </div>
 
           {/* データテーブル */}
           <div className="flex-1 min-w-0">

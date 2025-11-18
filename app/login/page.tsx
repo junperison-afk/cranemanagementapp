@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +18,8 @@ export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     register,
@@ -26,6 +28,39 @@ export default function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
+
+  // ローディングバーのアニメーション
+  useEffect(() => {
+    if (isLoading) {
+      // ローディング開始時に進捗をリセット
+      setProgress(0);
+
+      // アニメーションを開始（左から右へ）
+      intervalRef.current = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 70) {
+            return 70; // 70%で一旦停止（実際のロード完了を待つ）
+          }
+          // 徐々に進行（最初は速く、後半は遅く）
+          const increment = prev < 50 ? 15 : prev < 65 ? 8 : 3;
+          return Math.min(prev + increment, 70);
+        });
+      }, 100);
+    } else {
+      // ローディング終了時に完了
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isLoading]);
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -40,19 +75,44 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("メールアドレスまたはパスワードが正しくありません");
+        // エラー時も100%まで進めてから非表示
+        setProgress(100);
+        setTimeout(() => {
+          setIsLoading(false);
+          setProgress(0);
+        }, 200);
       } else {
-        router.push("/");
-        router.refresh();
+        // ログイン成功時は100%まで進めてからリダイレクト
+        setProgress(100);
+        setTimeout(() => {
+          router.push("/");
+          router.refresh();
+        }, 200);
       }
     } catch (error) {
       setError("ログインに失敗しました。もう一度お試しください。");
-    } finally {
-      setIsLoading(false);
+      // エラー時も100%まで進めてから非表示
+      setProgress(100);
+      setTimeout(() => {
+        setIsLoading(false);
+        setProgress(0);
+      }, 200);
     }
   };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+      {/* ローディングバー */}
+      {isLoading && progress > 0 && (
+        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-transparent">
+          <div
+            className="h-full bg-blue-600 transition-all duration-200 ease-out"
+            style={{
+              width: `${progress}%`,
+            }}
+          />
+        </div>
+      )}
       <div className="w-full max-w-md space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
@@ -80,7 +140,7 @@ export default function LoginPage() {
                 {...register("email")}
                 type="email"
                 autoComplete="email"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
                 placeholder="email@example.com"
               />
               {errors.email && (
@@ -100,7 +160,7 @@ export default function LoginPage() {
                 {...register("password")}
                 type="password"
                 autoComplete="current-password"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
                 placeholder="パスワード"
               />
               {errors.password && (

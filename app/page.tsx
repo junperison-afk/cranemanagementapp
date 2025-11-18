@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 
 export default async function Home() {
   const session = await getSession();
@@ -53,45 +54,86 @@ export default async function Home() {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             進行中プロジェクト
           </h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
             {projects.length === 0 ? (
-              <div className="col-span-full text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500">
                 進行中のプロジェクトはありません
               </div>
             ) : (
-              projects.map((project) => (
-                <div
-                  key={project.id}
-                  className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
-                >
-                  <h3 className="font-medium text-gray-900 mb-2">
-                    {project.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {project.company.name}
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        project.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {project.status === "IN_PROGRESS"
-                        ? "進行中"
-                        : project.status === "PLANNING"
-                        ? "計画中"
-                        : project.status}
-                    </span>
-                    {project.assignedUser && (
-                      <span className="text-xs text-gray-500">
-                        {project.assignedUser.name || project.assignedUser.email}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      プロジェクトタイトル
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      取引先
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ステータス
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      担当者
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      更新日
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {projects.map((project) => (
+                    <tr key={project.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link
+                          href={`/projects/${project.id}`}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                        >
+                          {project.title}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link
+                          href={`/companies/${project.company.id}`}
+                          className="text-sm text-gray-900 hover:text-blue-600"
+                        >
+                          {project.company.name}
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            project.status === "IN_PROGRESS"
+                              ? "bg-blue-100 text-blue-800"
+                              : project.status === "PLANNING"
+                              ? "bg-gray-100 text-gray-800"
+                              : project.status === "ON_HOLD"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-green-100 text-green-800"
+                          }`}
+                        >
+                          {project.status === "IN_PROGRESS"
+                            ? "進行中"
+                            : project.status === "PLANNING"
+                            ? "計画中"
+                            : project.status === "ON_HOLD"
+                            ? "保留"
+                            : project.status === "COMPLETED"
+                            ? "完了"
+                            : project.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {project.assignedUser
+                          ? project.assignedUser.name || project.assignedUser.email
+                          : "-"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(project.updatedAt).toLocaleDateString("ja-JP")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
@@ -127,8 +169,13 @@ export default async function Home() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {salesOpportunities.map((opportunity) => (
                     <tr key={opportunity.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {opportunity.title}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Link
+                          href={`/sales-opportunities/${opportunity.id}`}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                        >
+                          {opportunity.title}
+                        </Link>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {opportunity.company.name}

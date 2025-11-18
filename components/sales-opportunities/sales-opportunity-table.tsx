@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import PaginationHeader from "@/components/common/pagination-header";
 
 interface SalesOpportunity {
   id: string;
@@ -51,50 +54,61 @@ export default function SalesOpportunityTable({
 }: SalesOpportunityTableProps) {
   return (
     <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden h-full flex flex-col">
+      {/* データ件数とページネーション */}
+      <PaginationHeader
+        total={total}
+        page={page}
+        limit={limit}
+        skip={skip}
+        totalPages={totalPages}
+        searchParams={searchParams}
+        basePath="/sales-opportunities"
+      />
+
       {salesOpportunities.length === 0 ? (
-        <div className="text-center py-12 flex-1 flex items-center justify-center">
+        <div className="text-center py-12 flex-1 flex items-center justify-center bg-white">
           <p className="text-gray-500">営業案件が見つかりません</p>
         </div>
       ) : (
         <>
-          <div className="flex-1 overflow-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+          <div className="flex-1 overflow-auto bg-white border-b border-gray-200">
+            <table className="min-w-full">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     案件タイトル
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     取引先
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     ステータス
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     想定金額
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     クレーン台数
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     見積数
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     発生日
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     更新日
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     操作
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white">
                 {salesOpportunities.map((opportunity) => (
                   <tr
                     key={opportunity.id}
-                    className="hover:bg-gray-50 transition-colors"
+                    className="hover:bg-gray-50 transition-colors border-b border-gray-200"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
@@ -157,39 +171,6 @@ export default function SalesOpportunityTable({
               </tbody>
             </table>
           </div>
-
-          {/* ページネーション */}
-          {totalPages > 1 && (
-            <div className="bg-gray-50 px-6 py-3 border-t border-gray-200 flex items-center justify-between flex-shrink-0">
-              <div className="text-sm text-gray-700">
-                {total}件中 {skip + 1}〜{Math.min(skip + limit, total)}件を表示
-              </div>
-              <div className="flex gap-2">
-                {page > 1 && (
-                  <Link
-                    href={`/sales-opportunities?${new URLSearchParams({
-                      ...searchParams,
-                      page: String(page - 1),
-                    }).toString()}`}
-                    className="px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    前へ
-                  </Link>
-                )}
-                {page < totalPages && (
-                  <Link
-                    href={`/sales-opportunities?${new URLSearchParams({
-                      ...searchParams,
-                      page: String(page + 1),
-                    }).toString()}`}
-                    className="px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    次へ
-                  </Link>
-                )}
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>

@@ -42,8 +42,20 @@ export function EquipmentFilterPanelWrapper() {
     router.push(`/equipment?${params.toString()}`);
   };
 
-  if (!isFilterOpen) return null;
-
-  return <EquipmentFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />;
+  return (
+    <div
+      className={`overflow-hidden flex-shrink-0 h-full transition-all duration-300 ease-in-out ${
+        isFilterOpen ? "w-80" : "w-0"
+      }`}
+    >
+      <div
+        className={`h-full transition-transform duration-300 ease-in-out ${
+          isFilterOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <EquipmentFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+      </div>
+    </div>
+  );
 }
 

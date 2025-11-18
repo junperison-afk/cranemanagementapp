@@ -47,10 +47,20 @@ export function SalesOpportunityFilterPanelWrapper() {
     router.push(`/sales-opportunities?${params.toString()}`);
   };
 
-  if (!isFilterOpen) return null;
-
   return (
-    <SalesOpportunityFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+    <div
+      className={`overflow-hidden flex-shrink-0 h-full transition-all duration-300 ease-in-out ${
+        isFilterOpen ? "w-80" : "w-0"
+      }`}
+    >
+      <div
+        className={`h-full transition-transform duration-300 ease-in-out ${
+          isFilterOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <SalesOpportunityFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+      </div>
+    </div>
   );
 }
 

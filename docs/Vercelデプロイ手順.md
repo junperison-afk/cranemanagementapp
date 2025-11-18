@@ -87,10 +87,27 @@ openssl rand -base64 32
 2. 以下の環境変数を追加：
 
 ```
-DATABASE_URL=postgresql://[ユーザー名]:[パスワード]@[ホスト]:5432/[データベース名]
+DATABASE_URL=postgresql://[ユーザー名]:[パスワード]@[ホスト]:6543/[データベース名]?pgbouncer=true
 NEXTAUTH_URL=https://your-app.vercel.app
 NEXTAUTH_SECRET=[生成したシークレットキー]
 ```
+
+**重要:** `DATABASE_URL`は必ず**接続プーリング用**（ポート**6543**）を使用してください。
+- 直接接続用（ポート5432）では、サーバーレス環境（Vercel）で接続できない場合があります
+- 接続プーリング用URLは、Supabaseダッシュボードの「Settings」→「Database」→「Connection string」→「Connection pooling」→「Transaction pooler」から取得できます
+
+**接続プーリング環境でのプリペアドステートメントエラーを防ぐため、接続文字列にパラメータを追加:**
+- 接続プーリングを使用する場合、接続文字列の末尾に以下のパラメータを追加することを推奨します：
+  ```
+  &connect_timeout=15&pool_timeout=15
+  ```
+- 例: `postgresql://postgres.xxxxx:[PASSWORD]@aws-1-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true&connect_timeout=15&pool_timeout=15`
+
+**データベースパスワードの設定:**
+- 接続文字列に`[YOUR-PASSWORD]`というプレースホルダーが含まれている場合、実際のパスワードに置き換える必要があります
+- Supabaseダッシュボードの「Settings」→「Database」→「Database password」でパスワードを確認または再設定できます
+- パスワードを忘れた場合は、「Reset database password」をクリックして新しいパスワードを設定してください
+- **注意:** パスワードを変更すると、既存の接続文字列も更新する必要があります
 
 3. **Environment**を選択：
    - **Production**（本番環境）
@@ -207,34 +224,110 @@ npm run create-test-user
 
 ## ステップ7: カスタムドメインの設定（オプション）
 
-### 7-1. ドメインの追加
+### 7-1. ドメインの準備
+
+独自ドメインを設定する前に、以下を準備してください：
+- 独自ドメインの所有権（ドメインレジストラで購入済み）
+- ドメイン管理画面へのアクセス権限
+
+### 7-2. Vercelでドメインを追加
 
 1. Vercelダッシュボードでプロジェクトを選択
-2. 「Settings」→「Domains」を開く
-3. 「Add Domain」をクリック
-4. ドメイン名を入力（例: `manage.crane-mitsumori.com`）
-5. 「Add」をクリック
+2. 「Settings」タブをクリック
+3. 「Domains」を開く
+4. 「Add Domain」ボタンをクリック
+5. ドメイン名を入力
+   - 例: `manage.crane-mitsumori.com` （サブドメインの場合）
+   - 例: `crane-mitsumori.com` （ルートドメインの場合）
+6. 「Add」をクリック
 
-### 7-2. DNS設定
+### 7-3. DNS設定
 
-Vercelから表示されるDNS設定情報を、ドメイン管理画面で設定します：
+Vercelから表示されるDNS設定情報を確認し、ドメイン管理画面（レジストラのDNS設定）で設定します：
 
-**A Record または CNAME Record を追加：**
+**サブドメインの場合（例: `manage.crane-mitsumori.com`）:**
 
-- **CNAME（推奨）:** `manage` → `cname.vercel-dns.com`
-- **A Record:** Vercelが提供するIPアドレスを指定
+Vercelが推奨する設定方法が表示されます。通常は以下のいずれか：
 
-### 7-3. SSL証明書
+1. **CNAME Record（推奨）:**
+   - ホスト名: `manage`
+   - 値: `cname.vercel-dns.com` またはVercelが指定するCNAME値
+   - TTL: `3600`（またはデフォルト値）
 
-Vercelが自動でSSL証明書を発行・設定します。数分から数時間かかる場合があります。
+2. **A Record（CNAMEが使えない場合）:**
+   - Vercelが提供するIPアドレスを指定
+   - ホスト名: `manage`
+   - 値: Vercelが表示するIPアドレス（通常は76.76.21.21など）
 
-### 7-4. 環境変数の更新
+**ルートドメインの場合（例: `crane-mitsumori.com`）:**
 
-カスタムドメインを設定した場合、`NEXTAUTH_URL` を更新してください：
+- **A Record を使用**（ルートドメインではCNAMEが使えない場合があります）
+- Vercelが表示するIPアドレスを設定
 
+**DNS設定の手順（一般的なドメインレジストラの場合）:**
+
+1. ドメインレジストラ（お名前.com、ムームードメインなど）にログイン
+2. 「DNS設定」や「ネームサーバー設定」を開く
+3. Vercelが表示するレコードタイプ（CNAMEまたはA）を追加
+4. ホスト名と値を入力
+5. 保存
+
+**注意:** DNS設定の反映には通常数分から最大48時間かかることがあります。多くの場合、数分〜数時間で反映されます。
+
+### 7-4. SSL証明書の確認
+
+Vercelが自動でSSL証明書（Let's Encrypt）を発行・設定します：
+- DNS設定が反映されると、自動的にSSL証明書の取得が開始されます
+- 通常、数分〜数時間で完了します
+- 「Domains」画面で「Valid」と表示されれば設定完了です
+
+**SSL証明書が発行されない場合:**
+- DNS設定が正しく反映されているか確認
+- ドメインが正しくVercelに接続されているか確認（`nslookup` や `dig` コマンドで確認）
+- 数時間待ってから再度確認
+
+### 7-5. 環境変数の更新（重要）
+
+カスタムドメインを設定した場合、**必ず**`NEXTAUTH_URL`環境変数を更新してください：
+
+1. Vercelダッシュボードでプロジェクトを選択
+2. 「Settings」→「Environment Variables」を開く
+3. `NEXTAUTH_URL`を探して編集
+4. 新しいドメインのURLに更新（例: `https://manage.crane-mitsumori.com`）
+5. **注意:** 末尾にスラッシュ（`/`）を付けないでください
+6. 「Save」をクリック
+7. **再デプロイを実行**（環境変数の変更は再デプロイ後に反映されます）
+
+**設定例:**
 ```
 NEXTAUTH_URL=https://manage.crane-mitsumori.com
 ```
+
+**注意:** `NEXTAUTH_URL`を更新しないと、認証機能が正常に動作しません。ログイン後にリダイレクトが失敗したり、セッションが作成されない場合があります。
+
+### 7-6. 動作確認
+
+1. 新しいドメインでアクセス（例: `https://manage.crane-mitsumori.com`）
+2. サイトが表示されることを確認
+3. ログイン機能が正常に動作することを確認
+4. ブラウザのアドレスバーに鍵アイコン（🔒）が表示されていることを確認（SSL証明書が有効）
+
+### 7-7. よくある問題と解決方法
+
+**問題1: ドメインにアクセスできない**
+- DNS設定が反映されるまで待つ（最大48時間）
+- DNS設定が正しいか再確認
+- `nslookup manage.crane-mitsumori.com` コマンドでDNS設定を確認
+
+**問題2: SSL証明書が発行されない**
+- DNS設定が正しく反映されているか確認
+- ドメインがVercelに正しく接続されているか確認
+- 数時間待ってから再度確認
+
+**問題3: ログインできない（認証エラー）**
+- `NEXTAUTH_URL`環境変数が正しく設定されているか確認
+- 環境変数更新後に再デプロイが完了しているか確認
+- Vercelのログでエラーを確認
 
 ## ステップ8: 継続的デプロイ（CI/CD）の設定
 

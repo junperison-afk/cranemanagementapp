@@ -97,7 +97,7 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
   const hasActiveFilters = Object.values(filters).some((v) => v);
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full">
+    <div className="w-80 bg-white border border-gray-200 flex flex-col h-full">
       {/* フィルターパネルヘッダー */}
       <div className="flex h-16 items-center justify-between border-b border-gray-200 px-6 flex-shrink-0">
         <h2 className="text-lg font-semibold text-gray-900">

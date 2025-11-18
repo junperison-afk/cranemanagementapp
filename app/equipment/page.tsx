@@ -8,7 +8,7 @@ import {
   EquipmentFilterButtonWrapper,
   EquipmentFilterPanelWrapper,
 } from "@/components/equipment/equipment-filters-wrapper";
-import EquipmentTable from "@/components/equipment/equipment-table";
+import EquipmentTableWrapper from "@/components/equipment/equipment-table-wrapper";
 
 export default async function EquipmentPage({
   searchParams,
@@ -27,7 +27,7 @@ export default async function EquipmentPage({
 
   const search = searchParams.search || "";
   const page = parseInt(searchParams.page || "1");
-  const limit = 20;
+  const limit = parseInt(searchParams.limit || "20");
   const skip = (page - 1) * limit;
 
   // フィルター条件の構築
@@ -98,9 +98,9 @@ export default async function EquipmentPage({
 
   return (
     <MainLayout>
-      <div className="space-y-6 h-full flex flex-col">
+      <div className="h-full flex flex-col">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center justify-between flex-shrink-0 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">機器一覧</h1>
             <p className="mt-1 text-sm text-gray-500">
@@ -123,22 +123,22 @@ export default async function EquipmentPage({
         </div>
 
         {/* データテーブル部分（2分割可能） */}
-        <div className="flex-1 flex gap-6 min-h-0">
+        <div className="flex-1 flex gap-0 min-h-0 h-full">
           {/* フィルターパネル */}
-          <EquipmentFilterPanelWrapper />
+          <div className="mr-6">
+            <EquipmentFilterPanelWrapper />
+          </div>
 
           {/* データテーブル */}
-          <div className="flex-1 min-w-0">
-            <EquipmentTable
-              equipment={equipment}
-              total={total}
-              page={page}
-              limit={limit}
-              skip={skip}
-              totalPages={totalPages}
-              searchParams={searchParams}
-            />
-          </div>
+          <EquipmentTableWrapper
+            equipment={equipment}
+            total={total}
+            page={page}
+            limit={limit}
+            skip={skip}
+            totalPages={totalPages}
+            searchParams={searchParams}
+          />
         </div>
       </div>
     </MainLayout>
