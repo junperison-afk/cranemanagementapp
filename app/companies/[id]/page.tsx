@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import MainLayout from "@/components/layout/main-layout";
 import { prisma } from "@/lib/prisma";
 import ClientCompanyDetail from "./client-company-detail";
