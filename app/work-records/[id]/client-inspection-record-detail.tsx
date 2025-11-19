@@ -197,8 +197,8 @@ export default function ClientWorkRecordDetail({
             onSave={(value) =>
               handleSave("inspectionDate", new Date(value).toISOString())
             }
-            type="text"
-            placeholder="YYYY-MM-DD"
+            type="date"
+            placeholder="日付を選択"
             className={canEdit ? "" : "pointer-events-none opacity-60"}
           />
           {workRecord.workType === "INSPECTION" && (
@@ -242,12 +242,12 @@ export default function ClientWorkRecordDetail({
 
       {/* 関連情報 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 機器情報 */}
+        {/* 関連機器情報 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">機器情報</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">関連機器情報</h2>
           <div className="space-y-2">
             <div>
-              <p className="text-sm text-gray-500">機器名称</p>
+              <p className="text-sm text-gray-500">関連機器名称</p>
               <Link
                 href={`/equipment/${workRecord.equipment.id}`}
                 className="text-sm text-blue-600 hover:text-blue-800"
@@ -280,7 +280,7 @@ export default function ClientWorkRecordDetail({
               </div>
             )}
             <div>
-              <p className="text-sm text-gray-500">取引先</p>
+              <p className="text-sm text-gray-500">関連取引先</p>
               <Link
                 href={`/companies/${workRecord.equipment.company.id}`}
                 className="text-sm text-blue-600 hover:text-blue-800"

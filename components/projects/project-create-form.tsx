@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import DatePicker from "@/components/common/date-picker";
+import LookupField from "@/components/common/lookup-field";
 
 // バリデーションスキーマ
 const projectFormSchema = z.object({
@@ -45,13 +47,12 @@ export default function ProjectCreateForm({
 }: ProjectCreateFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectFormSchema),
@@ -60,33 +61,13 @@ export default function ProjectCreateForm({
     },
   });
 
-  // 取引先とユーザー一覧を取得
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [companiesRes, usersRes] = await Promise.all([
-          fetch("/api/companies?limit=1000"),
-          fetch("/api/users"),
-        ]);
+  const selectedCompanyId = watch("companyId");
 
-        if (companiesRes.ok) {
-          const companiesData = await companiesRes.json();
-          setCompanies(companiesData.companies || []);
-        }
-
-        if (usersRes.ok) {
-          const usersData = await usersRes.json();
-          setUsers(usersData.users || []);
-        }
-      } catch (err) {
-        console.error("データの取得に失敗しました:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // filterParamsをメモ化して参照の変更を防ぐ
+  const contactFilterParams = useMemo(
+    () => (selectedCompanyId ? { companyId: selectedCompanyId } : {}),
+    [selectedCompanyId]
+  );
 
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true);
@@ -132,30 +113,22 @@ export default function ProjectCreateForm({
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {/* 取引先 */}
         <div className="sm:col-span-2">
-          <label
-            htmlFor="companyId"
-            className="block text-sm font-medium text-gray-900"
-          >
-            取引先 <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="companyId"
+          <LookupField
+            label="取引先"
+            value={watch("companyId") || ""}
+            onChange={(value) => setValue("companyId", value, { shouldValidate: true })}
+            apiEndpoint="/api/companies"
+            displayKey="name"
+            secondaryKey="address"
+            itemsKey="companies"
+            placeholder="例: 株式会社○○工業"
+            required
+            error={errors.companyId?.message}
+          />
+          <input
+            type="hidden"
             {...register("companyId")}
-            disabled={isLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
-          >
-            <option value="">選択してください</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-          {errors.companyId && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.companyId.message}
-            </p>
-          )}
+          />
         </div>
 
         {/* プロジェクトタイトル */}
@@ -170,7 +143,8 @@ export default function ProjectCreateForm({
             type="text"
             id="title"
             {...register("title")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: ○○工場クレーン更新プロジェクト"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
           {errors.title && (
             <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
@@ -188,7 +162,7 @@ export default function ProjectCreateForm({
           <select
             id="status"
             {...register("status")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           >
             <option value="PLANNING">計画中</option>
             <option value="IN_PROGRESS">進行中</option>
@@ -199,25 +173,24 @@ export default function ProjectCreateForm({
 
         {/* 担当者 */}
         <div>
-          <label
-            htmlFor="assignedUserId"
-            className="block text-sm font-medium text-gray-900"
-          >
-            担当者
-          </label>
-          <select
-            id="assignedUserId"
+          <LookupField
+            label="担当者"
+            value={watch("assignedUserId") || ""}
+            onChange={(value) => setValue("assignedUserId", value || undefined, { shouldValidate: true })}
+            apiEndpoint="/api/contacts"
+            displayKey="name"
+            secondaryKey="position"
+            itemsKey="contacts"
+            placeholder="例: 山田 太郎"
+            filterParams={contactFilterParams}
+            disabled={!selectedCompanyId}
+            error={errors.assignedUserId?.message}
+            className={!selectedCompanyId ? "opacity-60" : ""}
+          />
+          <input
+            type="hidden"
             {...register("assignedUserId")}
-            disabled={isLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
-          >
-            <option value="">選択してください</option>
-            {users.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.name || user.email}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* 開始日 */}
@@ -228,11 +201,16 @@ export default function ProjectCreateForm({
           >
             開始日
           </label>
+          <DatePicker
+            value={watch("startDate") || undefined}
+            onChange={(value) => setValue("startDate", value, { shouldValidate: true })}
+            placeholder="日付を選択"
+            className="mt-1"
+          />
           <input
-            type="date"
+            type="hidden"
             id="startDate"
             {...register("startDate")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -244,11 +222,16 @@ export default function ProjectCreateForm({
           >
             終了日
           </label>
+          <DatePicker
+            value={watch("endDate") || undefined}
+            onChange={(value) => setValue("endDate", value, { shouldValidate: true })}
+            placeholder="日付を選択"
+            className="mt-1"
+          />
           <input
-            type="date"
+            type="hidden"
             id="endDate"
             {...register("endDate")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -265,7 +248,8 @@ export default function ProjectCreateForm({
             id="amount"
             step="0.01"
             {...register("amount")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 5000000"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -281,7 +265,8 @@ export default function ProjectCreateForm({
             id="notes"
             rows={4}
             {...register("notes")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 2024年度予算"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
       </div>

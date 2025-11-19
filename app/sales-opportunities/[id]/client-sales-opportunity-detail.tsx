@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
+import InlineEditLookup from "@/components/companies/inline-edit-lookup";
+import CompanyCreateForm from "@/components/companies/company-create-form";
 
 interface SalesOpportunity {
   id: string;
@@ -154,6 +156,21 @@ export default function ClientSalesOpportunityDetail({
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-6">基本情報</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <InlineEditLookup
+            label="関連取引先"
+            value={salesOpportunity.company.id}
+            onSave={(value) => handleSave("companyId", value)}
+            apiEndpoint="/api/companies"
+            displayKey="name"
+            secondaryKey="address"
+            itemsKey="companies"
+            placeholder="例: 株式会社○○工業"
+            createNewUrl="/companies/new"
+            returnUrl={`/sales-opportunities/${salesOpportunity.id}`}
+            canEdit={canEdit}
+            createFormComponent={CompanyCreateForm}
+            className={canEdit ? "" : "pointer-events-none opacity-60"}
+          />
           <InlineEditField
             label="案件タイトル"
             value={salesOpportunity.title}
@@ -215,8 +232,8 @@ export default function ClientSalesOpportunityDetail({
             onSave={(value) =>
               handleSave("occurredAt", value ? new Date(value).toISOString() : null)
             }
-            type="text"
-            placeholder="YYYY-MM-DD"
+            type="date"
+            placeholder="日付を選択"
             className={canEdit ? "" : "pointer-events-none opacity-60"}
           />
           <div className="md:col-span-2">
@@ -270,10 +287,10 @@ export default function ClientSalesOpportunityDetail({
           )}
         </div>
 
-        {/* 契約・プロジェクト情報 */}
+        {/* 契約・関連プロジェクト情報 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            契約・プロジェクト
+            契約・関連プロジェクト
           </h2>
           {salesOpportunity.contract ? (
             <div className="space-y-2">

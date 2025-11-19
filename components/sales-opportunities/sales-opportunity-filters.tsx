@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FilterPanelBase from "@/components/common/filter-panel-base";
+import DatePicker from "@/components/common/date-picker";
 
 interface FilterState {
   status?: string;
@@ -125,30 +126,28 @@ export function SalesOpportunityFilterPanel({
               <div className="space-y-2">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">以降</label>
-                  <input
-                    type="date"
-                    value={filters.occurredAfter}
-                    onChange={(e) =>
+                  <DatePicker
+                    value={filters.occurredAfter || undefined}
+                    onChange={(value) =>
                       setFilters({
                         ...filters,
-                        occurredAfter: e.target.value,
+                        occurredAfter: value,
                       })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="日付を選択"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">以前</label>
-                  <input
-                    type="date"
-                    value={filters.occurredBefore}
-                    onChange={(e) =>
+                  <DatePicker
+                    value={filters.occurredBefore || undefined}
+                    onChange={(value) =>
                       setFilters({
                         ...filters,
-                        occurredBefore: e.target.value,
+                        occurredBefore: value,
                       })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="日付を選択"
                   />
                 </div>
               </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import LookupField from "@/components/common/lookup-field";
 
 // バリデーションスキーマ
 const contactFormSchema = z.object({
@@ -24,11 +25,7 @@ type ContactFormData = z.infer<typeof contactFormSchema>;
 interface ContactCreateFormProps {
   onSuccess: (id: string) => void;
   onCancel: () => void;
-}
-
-interface Company {
-  id: string;
-  name: string;
+  defaultCompanyId?: string; // 初期値として設定する取引先ID
 }
 
 /**
@@ -37,38 +34,28 @@ interface Company {
 export default function ContactCreateForm({
   onSuccess,
   onCancel,
+  defaultCompanyId,
 }: ContactCreateFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
 
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
+    defaultValues: defaultCompanyId ? { companyId: defaultCompanyId } : {},
   });
 
-  // 取引先一覧を取得
+  // defaultCompanyIdが変更された場合に値を設定
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        const response = await fetch("/api/companies?limit=1000");
-        if (response.ok) {
-          const data = await response.json();
-          setCompanies(data.companies || []);
-        }
-      } catch (err) {
-        console.error("取引先一覧の取得に失敗しました:", err);
-      } finally {
-        setIsLoadingCompanies(false);
-      }
-    };
-
-    fetchCompanies();
-  }, []);
+    if (defaultCompanyId) {
+      setValue("companyId", defaultCompanyId, { shouldValidate: true });
+    }
+  }, [defaultCompanyId, setValue]);
 
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
@@ -111,30 +98,22 @@ export default function ContactCreateForm({
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {/* 取引先 */}
         <div className="sm:col-span-2">
-          <label
-            htmlFor="companyId"
-            className="block text-sm font-medium text-gray-900"
-          >
-            取引先 <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="companyId"
+          <LookupField
+            label="取引先"
+            value={watch("companyId") || ""}
+            onChange={(value) => setValue("companyId", value, { shouldValidate: true })}
+            apiEndpoint="/api/companies"
+            displayKey="name"
+            secondaryKey="address"
+            itemsKey="companies"
+            placeholder="例: 株式会社○○工業"
+            required
+            error={errors.companyId?.message}
+          />
+          <input
+            type="hidden"
             {...register("companyId")}
-            disabled={isLoadingCompanies}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
-          >
-            <option value="">選択してください</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-          {errors.companyId && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.companyId.message}
-            </p>
-          )}
+          />
         </div>
 
         {/* 氏名 */}
@@ -149,7 +128,8 @@ export default function ContactCreateForm({
             type="text"
             id="name"
             {...register("name")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 山田 太郎"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
           {errors.name && (
             <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -168,7 +148,8 @@ export default function ContactCreateForm({
             type="text"
             id="position"
             {...register("position")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 部長"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -184,7 +165,8 @@ export default function ContactCreateForm({
             type="tel"
             id="phone"
             {...register("phone")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 03-1234-5678"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -200,7 +182,8 @@ export default function ContactCreateForm({
             type="email"
             id="email"
             {...register("email")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: yamada@example.com"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
           {errors.email && (
             <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
@@ -219,7 +202,8 @@ export default function ContactCreateForm({
             id="notes"
             rows={4}
             {...register("notes")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 担当窓口"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
       </div>

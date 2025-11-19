@@ -20,7 +20,8 @@
     "create-dummy-sales-opportunities": "tsx scripts/create-dummy-sales-opportunities.ts",
     "create-dummy-equipment": "tsx scripts/create-dummy-equipment.ts",
     "create-dummy-work-records": "tsx scripts/create-dummy-work-records.ts",
-    "create-dummy-contacts": "tsx scripts/create-dummy-contacts.ts"
+    "create-dummy-contacts": "tsx scripts/create-dummy-contacts.ts",
+    "create-dummy-projects": "tsx scripts/create-dummy-projects.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

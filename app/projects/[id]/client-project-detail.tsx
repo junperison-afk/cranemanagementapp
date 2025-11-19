@@ -6,6 +6,10 @@ import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
+import InlineEditLookup from "@/components/companies/inline-edit-lookup";
+import CompanyCreateForm from "@/components/companies/company-create-form";
+import SalesOpportunityCreateForm from "@/components/sales-opportunities/sales-opportunity-create-form";
+import ContactCreateForm from "@/components/contacts/contact-create-form";
 
 interface Project {
   id: string;
@@ -161,6 +165,21 @@ export default function ClientProjectDetail({
             onSave={(value) => handleSave("title", value)}
             className={canEdit ? "" : "pointer-events-none opacity-60"}
           />
+          <InlineEditLookup
+            label="関連取引先"
+            value={project.company.id}
+            onSave={(value) => handleSave("companyId", value)}
+            apiEndpoint="/api/companies"
+            displayKey="name"
+            secondaryKey="address"
+            itemsKey="companies"
+            placeholder="例: 株式会社○○工業"
+            createNewUrl="/companies/new"
+            returnUrl={`/projects/${project.id}`}
+            canEdit={canEdit}
+            createFormComponent={CompanyCreateForm}
+            className={canEdit ? "" : "pointer-events-none opacity-60"}
+          />
           <InlineEditSelect
             label="ステータス"
             value={project.status}
@@ -186,8 +205,8 @@ export default function ClientProjectDetail({
             onSave={(value) =>
               handleSave("startDate", value ? new Date(value).toISOString() : null)
             }
-            type="text"
-            placeholder="YYYY-MM-DD"
+            type="date"
+            placeholder="日付を選択"
             className={canEdit ? "" : "pointer-events-none opacity-60"}
           />
           <InlineEditField
@@ -200,8 +219,8 @@ export default function ClientProjectDetail({
             onSave={(value) =>
               handleSave("endDate", value ? new Date(value).toISOString() : null)
             }
-            type="text"
-            placeholder="YYYY-MM-DD"
+            type="date"
+            placeholder="日付を選択"
             className={canEdit ? "" : "pointer-events-none opacity-60"}
           />
           <div className="md:col-span-2">
@@ -218,46 +237,58 @@ export default function ClientProjectDetail({
 
       {/* 関連情報 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 営業案件情報 */}
-        {project.salesOpportunity && (
-          <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              営業案件
-            </h2>
-            <Link
-              href={`/sales-opportunities/${project.salesOpportunity.id}`}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              {project.salesOpportunity.title}
-            </Link>
-          </div>
-        )}
-
-        {/* 担当者情報 */}
+        {/* 関連営業案件情報 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            担当者
+            関連営業案件
           </h2>
-          {project.assignedUser ? (
-            <div className="space-y-2">
-              <p className="text-sm text-gray-900">
-                {project.assignedUser.name || project.assignedUser.email}
-              </p>
-              <p className="text-sm text-gray-500">
-                {project.assignedUser.email}
-              </p>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">担当者が設定されていません</p>
-          )}
+          <InlineEditLookup
+            label="関連営業案件"
+            value={project.salesOpportunity?.id || null}
+            onSave={(value) => handleSave("salesOpportunityId", value)}
+            apiEndpoint="/api/sales-opportunities"
+            displayKey="title"
+            secondaryKey="company"
+            itemsKey="salesOpportunities"
+            placeholder="例: ○○工場クレーン点検案件"
+            filterParams={project.company?.id ? { companyId: project.company.id } : {}}
+            createNewUrl={`/sales-opportunities/new${project.company?.id ? `?companyId=${project.company.id}` : ""}`}
+            returnUrl={`/projects/${project.id}`}
+            canEdit={canEdit}
+            createFormComponent={SalesOpportunityCreateForm}
+            className={canEdit ? "" : "pointer-events-none opacity-60"}
+          />
+        </div>
+
+        {/* 関連連絡先情報 */}
+        <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            関連連絡先
+          </h2>
+          <InlineEditLookup
+            label="関連連絡先"
+            value={project.assignedUser?.id || null}
+            onSave={(value) => handleSave("assignedUserId", value)}
+            apiEndpoint="/api/contacts"
+            displayKey="name"
+            secondaryKey="position"
+            itemsKey="contacts"
+            placeholder="例: 山田 太郎"
+            filterParams={project.company?.id ? { companyId: project.company.id } : {}}
+            createNewUrl={`/contacts/new${project.company?.id ? `?companyId=${project.company.id}` : ""}`}
+            returnUrl={`/projects/${project.id}`}
+            canEdit={canEdit}
+            createFormComponent={ContactCreateForm}
+            className={canEdit ? "" : "pointer-events-none opacity-60"}
+          />
         </div>
       </div>
 
-      {/* 機器情報 */}
+      {/* 関連機器情報 */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            機器 ({project._count.equipment})
+            関連機器 ({project._count.equipment})
           </h2>
           {canEdit && (
             <Link
@@ -269,7 +300,7 @@ export default function ClientProjectDetail({
           )}
         </div>
         {project.equipment.length === 0 ? (
-          <p className="text-sm text-gray-500">機器が登録されていません</p>
+          <p className="text-sm text-gray-500">関連機器が登録されていません</p>
         ) : (
           <div className="space-y-2">
             {project.equipment.map((equipment) => (

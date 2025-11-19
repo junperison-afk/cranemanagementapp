@@ -165,11 +165,11 @@ export default function ClientEquipmentDetail({
 
       {/* 関連情報 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* プロジェクト情報 */}
+        {/* 関連プロジェクト情報 */}
         {equipment.project && (
           <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              プロジェクト
+              関連プロジェクト
             </h2>
             <Link
               href={`/projects/${equipment.project.id}`}

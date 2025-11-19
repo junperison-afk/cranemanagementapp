@@ -2,12 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { PencilIcon, CheckIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import DatePicker from "@/components/common/date-picker";
 
 interface InlineEditFieldProps {
   label: string;
   value: string | null | undefined;
   onSave: (value: string) => Promise<void>;
-  type?: "text" | "email" | "tel" | "textarea";
+  type?: "text" | "email" | "tel" | "textarea" | "date";
   placeholder?: string;
   multiline?: boolean;
   className?: string;
@@ -49,6 +50,19 @@ export default function InlineEditField({
     }
   };
 
+  const handleSaveWithValue = async (newValue: string) => {
+    setIsSaving(true);
+    try {
+      await onSave(newValue);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("保存エラー:", error);
+      alert("保存に失敗しました");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCancel = () => {
     setEditValue(value || "");
     setIsEditing(false);
@@ -75,7 +89,18 @@ export default function InlineEditField({
           {label}
         </label>
         <div className="flex items-start gap-2">
-          {multiline ? (
+          {type === "date" ? (
+            <div className="flex-1">
+              <DatePicker
+                value={editValue || undefined}
+                onChange={(value) => {
+                  setEditValue(value);
+                }}
+                placeholder={placeholder || "日付を選択"}
+                className="border-blue-500"
+              />
+            </div>
+          ) : multiline ? (
             <textarea
               ref={inputRef as React.RefObject<HTMLTextAreaElement>}
               value={editValue}

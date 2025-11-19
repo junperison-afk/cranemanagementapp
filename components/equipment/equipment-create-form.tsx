@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import LookupField from "@/components/common/lookup-field";
 
 // バリデーションスキーマ
 const equipmentFormSchema = z.object({
@@ -47,59 +48,18 @@ export default function EquipmentCreateForm({
 }: EquipmentCreateFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<EquipmentFormData>({
     resolver: zodResolver(equipmentFormSchema),
   });
 
-  const companyId = watch("companyId");
-
-  // 取引先とプロジェクト一覧を取得
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [companiesRes, projectsRes] = await Promise.all([
-          fetch("/api/companies?limit=1000"),
-          fetch("/api/projects?limit=1000"),
-        ]);
-
-        if (companiesRes.ok) {
-          const companiesData = await companiesRes.json();
-          setCompanies(companiesData.companies || []);
-        }
-
-        if (projectsRes.ok) {
-          const projectsData = await projectsRes.json();
-          setProjects(projectsData.projects || []);
-        }
-      } catch (err) {
-        console.error("データの取得に失敗しました:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // 取引先が変更されたらプロジェクトをフィルタリング
-  useEffect(() => {
-    setSelectedCompanyId(companyId || "");
-  }, [companyId]);
-
-  // 選択された取引先に関連するプロジェクトをフィルタリング
-  const filteredProjects = selectedCompanyId
-    ? projects.filter((p) => p.company?.id === selectedCompanyId)
-    : projects;
+  const selectedCompanyId = watch("companyId");
 
   const onSubmit = async (data: EquipmentFormData) => {
     setIsSubmitting(true);
@@ -142,53 +102,48 @@ export default function EquipmentCreateForm({
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {/* 取引先 */}
         <div className="sm:col-span-2">
-          <label
-            htmlFor="companyId"
-            className="block text-sm font-medium text-gray-900"
-          >
-            取引先 <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="companyId"
+          <LookupField
+            label="取引先"
+            value={watch("companyId") || ""}
+            onChange={(value) => {
+              setValue("companyId", value, { shouldValidate: true });
+              // 取引先が変更されたらプロジェクトをクリア
+              setValue("projectId", "");
+            }}
+            apiEndpoint="/api/companies"
+            displayKey="name"
+            secondaryKey="address"
+            itemsKey="companies"
+            placeholder="例: 株式会社○○工業"
+            required
+            error={errors.companyId?.message}
+          />
+          <input
+            type="hidden"
             {...register("companyId")}
-            disabled={isLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
-          >
-            <option value="">選択してください</option>
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-          {errors.companyId && (
-            <p className="mt-1 text-sm text-red-600">
-              {errors.companyId.message}
-            </p>
-          )}
+          />
         </div>
 
         {/* プロジェクト */}
         <div className="sm:col-span-2">
-          <label
-            htmlFor="projectId"
-            className="block text-sm font-medium text-gray-900"
-          >
-            プロジェクト
-          </label>
-          <select
-            id="projectId"
+          <LookupField
+            label="プロジェクト"
+            value={watch("projectId") || ""}
+            onChange={(value) => setValue("projectId", value || undefined, { shouldValidate: true })}
+            apiEndpoint="/api/projects"
+            displayKey="title"
+            secondaryKey="company"
+            itemsKey="projects"
+            placeholder="例: ○○工場クレーン更新プロジェクト"
+            disabled={!selectedCompanyId}
+            filterParams={selectedCompanyId ? { companyId: selectedCompanyId } : {}}
+            error={errors.projectId?.message}
+            className={!selectedCompanyId ? "opacity-60" : ""}
+          />
+          <input
+            type="hidden"
             {...register("projectId")}
-            disabled={isLoading || !selectedCompanyId}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
-          >
-            <option value="">選択してください</option>
-            {filteredProjects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.title}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         {/* 機器名称 */}
@@ -203,7 +158,8 @@ export default function EquipmentCreateForm({
             type="text"
             id="name"
             {...register("name")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 10tオーバーヘッドクレーン"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
           {errors.name && (
             <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
@@ -222,7 +178,8 @@ export default function EquipmentCreateForm({
             type="text"
             id="model"
             {...register("model")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: OH-10T-30M"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -238,7 +195,8 @@ export default function EquipmentCreateForm({
             type="text"
             id="serialNumber"
             {...register("serialNumber")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: SN-2024-001"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -254,7 +212,8 @@ export default function EquipmentCreateForm({
             type="text"
             id="location"
             {...register("location")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 第1工場 1階"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -270,7 +229,7 @@ export default function EquipmentCreateForm({
             id="specifications"
             rows={3}
             {...register("specifications")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
             placeholder="JSON形式で入力可能"
           />
         </div>
@@ -287,7 +246,8 @@ export default function EquipmentCreateForm({
             id="notes"
             rows={4}
             {...register("notes")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 定期メンテナンス実施中"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
       </div>

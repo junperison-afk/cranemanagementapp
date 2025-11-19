@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
+import ContactCreateForm from "@/components/contacts/contact-create-form";
 
 interface Company {
   id: string;
@@ -42,6 +43,7 @@ export default function ClientCompanyDetail({
   const router = useRouter();
   const [company, setCompany] = useState(initialCompany);
   const [isSaving, setIsSaving] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const updateCompany = async (field: string, value: any) => {
     if (!canEdit) return;
@@ -84,6 +86,26 @@ export default function ClientCompanyDetail({
 
   const handleSave = async (field: string, value: any) => {
     await updateCompany(field, value);
+  };
+
+  const handleContactCreateSuccess = async (id: string) => {
+    setIsContactModalOpen(false);
+    // 取引先の最新データを取得して状態を更新
+    try {
+      const response = await fetch(`/api/companies/${company.id}`);
+      if (response.ok) {
+        const updatedCompany = await response.json();
+        setCompany(updatedCompany);
+      }
+    } catch (error) {
+      console.error("取引先データ取得エラー:", error);
+      // エラーが発生しても画面を更新（router.refreshでサーバー側のデータを取得）
+      router.refresh();
+    }
+  };
+
+  const handleContactCreateCancel = () => {
+    setIsContactModalOpen(false);
   };
 
   return (
@@ -270,24 +292,25 @@ export default function ClientCompanyDetail({
 
       {/* 関連情報 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 担当者一覧 */}
+        {/* 関連連絡先一覧 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              担当者 ({company._count?.contacts ?? company.contacts.length})
+              関連連絡先 ({company._count?.contacts ?? company.contacts.length})
             </h2>
             {canEdit && (
-              <Link
-                href={`/companies/${company.id}/contacts/new`}
+              <button
+                type="button"
+                onClick={() => setIsContactModalOpen(true)}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
                 + 追加
-              </Link>
+              </button>
             )}
           </div>
           {company.contacts.length === 0 ? (
             <p className="text-sm text-gray-500">
-              担当者が登録されていません
+              関連連絡先が登録されていません
             </p>
           ) : (
             <div className="space-y-3">
@@ -312,11 +335,11 @@ export default function ClientCompanyDetail({
           )}
         </div>
 
-        {/* 営業案件一覧 */}
+        {/* 関連営業案件一覧 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              営業案件 ({company._count?.salesOpportunities ?? company.salesOpportunities.length})
+              関連営業案件 ({company._count?.salesOpportunities ?? company.salesOpportunities.length})
             </h2>
             {canEdit && (
               <Link
@@ -329,7 +352,7 @@ export default function ClientCompanyDetail({
           </div>
           {company.salesOpportunities.length === 0 ? (
             <p className="text-sm text-gray-500">
-              営業案件が登録されていません
+              関連営業案件が登録されていません
             </p>
           ) : (
             <div className="space-y-3">
@@ -368,16 +391,16 @@ export default function ClientCompanyDetail({
           )}
         </div>
 
-        {/* プロジェクト一覧 */}
+        {/* 関連プロジェクト一覧 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              プロジェクト ({company._count?.projects ?? company.projects.length})
+              関連プロジェクト ({company._count?.projects ?? company.projects.length})
             </h2>
           </div>
           {company.projects.length === 0 ? (
             <p className="text-sm text-gray-500">
-              プロジェクトが登録されていません
+              関連プロジェクトが登録されていません
             </p>
           ) : (
             <div className="space-y-3">
@@ -418,11 +441,11 @@ export default function ClientCompanyDetail({
           )}
         </div>
 
-        {/* 機器一覧 */}
+        {/* 関連機器一覧 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              機器 ({company._count?.equipment ?? company.equipment.length})
+              関連機器 ({company._count?.equipment ?? company.equipment.length})
             </h2>
             {canEdit && (
               <Link
@@ -434,7 +457,7 @@ export default function ClientCompanyDetail({
             )}
           </div>
           {company.equipment.length === 0 ? (
-            <p className="text-sm text-gray-500">機器が登録されていません</p>
+            <p className="text-sm text-gray-500">関連機器が登録されていません</p>
           ) : (
             <div className="space-y-3">
               {company.equipment.map((equipment) => (
@@ -458,7 +481,121 @@ export default function ClientCompanyDetail({
           )}
         </div>
       </div>
+
+      {/* 連絡先新規作成モーダル */}
+      {isContactModalOpen && (
+        <ContactCreateModal
+          title="連絡先を新規作成"
+          companyId={company.id}
+          onClose={handleContactCreateCancel}
+          onSuccess={handleContactCreateSuccess}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * 連絡先新規作成モーダルコンポーネント
+ */
+interface ContactCreateModalProps {
+  title: string;
+  companyId: string;
+  onClose: () => void;
+  onSuccess: (id: string) => void;
+}
+
+function ContactCreateModal({
+  title,
+  companyId,
+  onClose,
+  onSuccess,
+}: ContactCreateModalProps) {
+  // ESCキーでモーダルを閉じる
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* オーバーレイ */}
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+      />
+
+      {/* モーダル */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* ヘッダー */}
+          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            >
+              <span className="sr-only">閉じる</span>
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* コンテンツ */}
+          <div className="px-6 py-4">
+            <ContactCreateFormWithCompanyId
+              companyId={companyId}
+              onSuccess={onSuccess}
+              onCancel={onClose}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 取引先IDが事前に設定された連絡先作成フォーム
+ */
+interface ContactCreateFormWithCompanyIdProps {
+  companyId: string;
+  onSuccess: (id: string) => void;
+  onCancel: () => void;
+}
+
+function ContactCreateFormWithCompanyId({
+  companyId,
+  onSuccess,
+  onCancel,
+}: ContactCreateFormWithCompanyIdProps) {
+  return (
+    <ContactCreateForm
+      onSuccess={onSuccess}
+      onCancel={onCancel}
+      defaultCompanyId={companyId}
+    />
   );
 }
 

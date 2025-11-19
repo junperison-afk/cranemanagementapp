@@ -4,6 +4,12 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { config } from "dotenv";
+import { resolve } from "path";
+
+// 環境変数を読み込む（.env.localを優先）
+config({ path: resolve(process.cwd(), ".env.local") });
+config({ path: resolve(process.cwd(), ".env") });
 
 const prisma = new PrismaClient();
 

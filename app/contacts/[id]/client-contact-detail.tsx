@@ -141,7 +141,7 @@ export default function ClientContactDetail({
 
       {/* 関連情報 */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">取引先情報</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">関連取引先情報</h2>
         <div className="space-y-2">
           <div>
             <p className="text-sm text-gray-500">会社名</p>

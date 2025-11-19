@@ -91,7 +91,6 @@ function CreateModal({ title, children, onClose }: CreateModalProps) {
       {/* オーバーレイ */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-        onClick={onClose}
       />
 
       {/* モーダル */}

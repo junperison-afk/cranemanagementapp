@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import DatePicker from "@/components/common/date-picker";
 
 // バリデーションスキーマ
 const workRecordFormSchema = z.object({
@@ -54,6 +55,8 @@ export default function WorkRecordCreateForm({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<WorkRecordFormData>({
     resolver: zodResolver(workRecordFormSchema),
@@ -143,7 +146,7 @@ export default function WorkRecordCreateForm({
             id="equipmentId"
             {...register("equipmentId")}
             disabled={isLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           >
             <option value="">選択してください</option>
             {equipment.map((eq) => (
@@ -171,7 +174,7 @@ export default function WorkRecordCreateForm({
             id="userId"
             {...register("userId")}
             disabled={isLoading}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           >
             <option value="">選択してください</option>
             {users.map((user) => (
@@ -198,7 +201,7 @@ export default function WorkRecordCreateForm({
           <select
             id="workType"
             {...register("workType")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           >
             <option value="INSPECTION">点検</option>
             <option value="REPAIR">修理</option>
@@ -215,11 +218,16 @@ export default function WorkRecordCreateForm({
           >
             作業日 <span className="text-red-500">*</span>
           </label>
+          <DatePicker
+            value={watch("inspectionDate") || undefined}
+            onChange={(value) => setValue("inspectionDate", value, { shouldValidate: true })}
+            placeholder="日付を選択"
+            className="mt-1"
+          />
           <input
-            type="date"
+            type="hidden"
             id="inspectionDate"
             {...register("inspectionDate")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
           {errors.inspectionDate && (
             <p className="mt-1 text-sm text-red-600">
@@ -239,7 +247,7 @@ export default function WorkRecordCreateForm({
           <select
             id="overallJudgment"
             {...register("overallJudgment")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           >
             <option value="">選択してください</option>
             <option value="GOOD">良好</option>
@@ -261,7 +269,8 @@ export default function WorkRecordCreateForm({
             id="findings"
             rows={3}
             {...register("findings")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: ワイヤーロープに軽度の摩耗を確認"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -277,7 +286,8 @@ export default function WorkRecordCreateForm({
             id="summary"
             rows={3}
             {...register("summary")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 全体的に良好、要監視箇所あり"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
 
@@ -293,7 +303,8 @@ export default function WorkRecordCreateForm({
             id="additionalNotes"
             rows={3}
             {...register("additionalNotes")}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
+            placeholder="例: 次回点検時に詳細確認"
+            className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />
         </div>
       </div>

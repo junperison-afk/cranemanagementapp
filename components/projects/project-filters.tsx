@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FilterPanelBase from "@/components/common/filter-panel-base";
+import DatePicker from "@/components/common/date-picker";
 
 interface FilterState {
   status?: string;
@@ -148,30 +149,28 @@ export function ProjectFilterPanel({ isOpen, onClose }: ProjectFiltersProps) {
               <div className="space-y-2">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">以降</label>
-                  <input
-                    type="date"
-                    value={filters.startDateAfter}
-                    onChange={(e) =>
+                  <DatePicker
+                    value={filters.startDateAfter || undefined}
+                    onChange={(value) =>
                       setFilters({
                         ...filters,
-                        startDateAfter: e.target.value,
+                        startDateAfter: value,
                       })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="日付を選択"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">以前</label>
-                  <input
-                    type="date"
-                    value={filters.startDateBefore}
-                    onChange={(e) =>
+                  <DatePicker
+                    value={filters.startDateBefore || undefined}
+                    onChange={(value) =>
                       setFilters({
                         ...filters,
-                        startDateBefore: e.target.value,
+                        startDateBefore: value,
                       })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="日付を選択"
                   />
                 </div>
               </div>
@@ -185,30 +184,28 @@ export function ProjectFilterPanel({ isOpen, onClose }: ProjectFiltersProps) {
               <div className="space-y-2">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">以降</label>
-                  <input
-                    type="date"
-                    value={filters.endDateAfter}
-                    onChange={(e) =>
+                  <DatePicker
+                    value={filters.endDateAfter || undefined}
+                    onChange={(value) =>
                       setFilters({
                         ...filters,
-                        endDateAfter: e.target.value,
+                        endDateAfter: value,
                       })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="日付を選択"
                   />
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">以前</label>
-                  <input
-                    type="date"
-                    value={filters.endDateBefore}
-                    onChange={(e) =>
+                  <DatePicker
+                    value={filters.endDateBefore || undefined}
+                    onChange={(value) =>
                       setFilters({
                         ...filters,
-                        endDateBefore: e.target.value,
+                        endDateBefore: value,
                       })
                     }
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="日付を選択"
                   />
                 </div>
               </div>
