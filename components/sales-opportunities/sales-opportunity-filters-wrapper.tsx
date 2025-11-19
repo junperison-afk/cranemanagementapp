@@ -11,8 +11,12 @@ export function SalesOpportunityFilterButtonWrapper() {
   const isFilterOpen = searchParams.get("filter") === "open";
 
   const activeFilterCount = [
+    searchParams.get("search"),
     searchParams.get("status"),
     searchParams.get("companyId"),
+    searchParams.get("estimatedAmount"),
+    searchParams.get("craneCount"),
+    searchParams.get("estimateCount"),
     searchParams.get("occurredAfter"),
     searchParams.get("occurredBefore"),
   ].filter((v) => v).length;

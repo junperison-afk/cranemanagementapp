@@ -11,8 +11,12 @@ export function EquipmentFilterButtonWrapper() {
   const isFilterOpen = searchParams.get("filter") === "open";
 
   const activeFilterCount = [
-    searchParams.get("companyId"),
-    searchParams.get("projectId"),
+    searchParams.get("search"),
+    searchParams.get("model"),
+    searchParams.get("serialNumber"),
+    searchParams.get("location"),
+    searchParams.get("updatedAfter"),
+    searchParams.get("updatedBefore"),
   ].filter((v) => v).length;
 
   const toggleFilter = () => {

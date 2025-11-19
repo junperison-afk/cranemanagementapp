@@ -11,12 +11,17 @@ export function WorkRecordFilterButtonWrapper() {
   const isFilterOpen = searchParams.get("filter") === "open";
 
   const activeFilterCount = [
+    searchParams.get("search"),
     searchParams.get("equipmentId"),
     searchParams.get("userId"),
     searchParams.get("workType"),
     searchParams.get("overallJudgment"),
+    searchParams.get("findings"),
+    searchParams.get("resultSummary"),
     searchParams.get("inspectionDateAfter"),
     searchParams.get("inspectionDateBefore"),
+    searchParams.get("updatedAfter"),
+    searchParams.get("updatedBefore"),
   ].filter((v) => v).length;
 
   const toggleFilter = () => {

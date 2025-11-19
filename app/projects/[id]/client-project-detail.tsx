@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
 import InlineEditLookup from "@/components/companies/inline-edit-lookup";
@@ -76,6 +78,7 @@ export default function ClientProjectDetail({
   canEdit,
 }: ClientProjectDetailProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [project, setProject] = useState(initialProject);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -151,6 +154,14 @@ export default function ClientProjectDetail({
           >
             {statusLabels[project.status]}
           </span>
+          {session?.user.role === "ADMIN" && (
+            <DeleteItemButton
+              apiPath="/api/projects"
+              itemId={project.id}
+              resourceName="プロジェクト"
+              redirectPath="/projects"
+            />
+          )}
         </div>
       </div>
 

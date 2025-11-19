@@ -11,11 +11,11 @@ export function CompanyFilterButtonWrapper() {
   const isFilterOpen = searchParams.get("filter") === "open";
 
   const activeFilterCount = [
-    searchParams.get("industryType"),
-    searchParams.get("billingFlag"),
-    searchParams.get("hasSalesOpportunities"),
-    searchParams.get("hasProjects"),
-    searchParams.get("hasEquipment"),
+    searchParams.get("search"),
+    searchParams.get("postalCode"),
+    searchParams.get("address"),
+    searchParams.get("phone"),
+    searchParams.get("email"),
     searchParams.get("updatedAfter"),
     searchParams.get("updatedBefore"),
   ].filter((v) => v).length;

@@ -27,31 +27,61 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status");
     const companyId = searchParams.get("companyId");
+    const estimatedAmount = searchParams.get("estimatedAmount");
+    const craneCount = searchParams.get("craneCount");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const whereConditions: any[] = [];
 
     // 検索条件
     if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { craneInfo: { contains: search } },
-        { notes: { contains: search } },
-        { company: { name: { contains: search } } },
-      ];
+      whereConditions.push({
+        OR: [
+          { title: { contains: search } },
+          { craneInfo: { contains: search } },
+          { notes: { contains: search } },
+          { company: { name: { contains: search } } },
+        ],
+      });
     }
 
     // ステータスフィルター
     if (status) {
-      where.status = status;
+      whereConditions.push({
+        status: status,
+      });
     }
 
     // 取引先フィルター
     if (companyId) {
-      where.companyId = companyId;
+      whereConditions.push({
+        companyId: companyId,
+      });
     }
+
+    // 想定金額フィルター
+    if (estimatedAmount) {
+      const estimatedAmountValue = parseFloat(estimatedAmount);
+      if (!isNaN(estimatedAmountValue)) {
+        whereConditions.push({
+          estimatedAmount: { equals: estimatedAmountValue },
+        });
+      }
+    }
+
+    // クレーン台数フィルター
+    if (craneCount) {
+      const craneCountValue = parseInt(craneCount);
+      if (!isNaN(craneCountValue)) {
+        whereConditions.push({
+          craneCount: { equals: craneCountValue },
+        });
+      }
+    }
+
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
     const [salesOpportunities, total] = await Promise.all([
       prisma.salesOpportunity.findMany({

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 
 interface Equipment {
@@ -44,6 +46,7 @@ export default function ClientEquipmentDetail({
   canEdit,
 }: ClientEquipmentDetailProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [equipment, setEquipment] = useState(initialEquipment);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -110,6 +113,16 @@ export default function ClientEquipmentDetail({
               </Link>
             </p>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {session?.user.role === "ADMIN" && (
+            <DeleteItemButton
+              apiPath="/api/equipment"
+              itemId={equipment.id}
+              resourceName="機器"
+              redirectPath="/equipment"
+            />
+          )}
         </div>
       </div>
 

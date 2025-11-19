@@ -1,30 +1,23 @@
 "use client";
 
-import EquipmentTable from "./equipment-table";
+import ContactTable from "./contact-table";
 import { useSelectionEvent } from "@/hooks/use-selection-event";
 
-interface Equipment {
+interface Contact {
   id: string;
   name: string;
-  model: string | null;
-  serialNumber: string | null;
-  location: string | null;
+  position: string | null;
+  phone: string | null;
+  email: string | null;
   updatedAt: Date;
   company: {
     id: string;
     name: string;
   };
-  project: {
-    id: string;
-    title: string;
-  } | null;
-  _count: {
-    inspectionRecords: number;
-  };
 }
 
-interface EquipmentTableWrapperProps {
-  equipment: Equipment[];
+interface ContactTableWrapperProps {
+  contacts: Contact[];
   total: number;
   page: number;
   limit: number;
@@ -33,20 +26,20 @@ interface EquipmentTableWrapperProps {
   searchParams: Record<string, string | undefined>;
 }
 
-export default function EquipmentTableWrapper({
-  equipment,
+export default function ContactTableWrapper({
+  contacts,
   total,
   page,
   limit,
   skip,
   totalPages,
   searchParams,
-}: EquipmentTableWrapperProps) {
-  const handleSelectionChange = useSelectionEvent("equipmentSelectionChange");
+}: ContactTableWrapperProps) {
+  const handleSelectionChange = useSelectionEvent("contactSelectionChange");
 
   return (
-    <EquipmentTable
-      equipment={equipment}
+    <ContactTable
+      contacts={contacts}
       total={total}
       page={page}
       limit={limit}
@@ -57,3 +50,4 @@ export default function EquipmentTableWrapper({
     />
   );
 }
+

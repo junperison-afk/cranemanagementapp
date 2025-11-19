@@ -2,13 +2,7 @@ import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { prisma } from "@/lib/prisma";
-import {
-  ProjectFilterButtonWrapper,
-  ProjectFilterPanelWrapper,
-} from "@/components/projects/project-filters-wrapper";
-import ProjectTable from "@/components/projects/project-table";
-import CreateButton from "@/components/common/create-button";
-import ProjectCreateForm from "@/components/projects/project-create-form";
+import ProjectsPageClient from "@/components/projects/projects-page-client";
 
 // 常に最新のデータを取得するため、動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -23,10 +17,14 @@ export default async function ProjectsPage({
     status?: string;
     companyId?: string;
     assignedUserId?: string;
+    amount?: string;
+    equipmentCount?: string;
     startDateAfter?: string;
     startDateBefore?: string;
     endDateAfter?: string;
     endDateBefore?: string;
+    updatedAfter?: string;
+    updatedBefore?: string;
   };
 }) {
   const session = await getSession();
@@ -100,6 +98,38 @@ export default async function ProjectsPage({
     });
   }
 
+  // 金額フィルター
+  if (searchParams.amount) {
+    const amountValue = parseFloat(searchParams.amount);
+    if (!isNaN(amountValue)) {
+      whereConditions.push({
+        amount: { equals: amountValue },
+      });
+    }
+  }
+
+  // 機器数フィルター（_count.equipmentを使用）
+  if (searchParams.equipmentCount) {
+    const equipmentCountValue = parseInt(searchParams.equipmentCount);
+    if (!isNaN(equipmentCountValue)) {
+      // 機器数でのフィルターは、取得後にフィルタリングする必要があるため、
+      // ここでは処理しない（または別の方法で実装）
+    }
+  }
+
+  // 更新日時フィルター
+  if (searchParams.updatedAfter) {
+    whereConditions.push({
+      updatedAt: { gte: new Date(searchParams.updatedAfter) },
+    });
+  }
+
+  if (searchParams.updatedBefore) {
+    whereConditions.push({
+      updatedAt: { lte: new Date(searchParams.updatedBefore) },
+    });
+  }
+
   const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
   const [projects, total] = await Promise.all([
@@ -150,46 +180,15 @@ export default async function ProjectsPage({
 
   return (
     <MainLayout>
-      <div className="h-full flex flex-col">
-        {/* ヘッダー */}
-        <div className="flex items-center justify-between flex-shrink-0 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">プロジェクト一覧</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              プロジェクトの検索・管理ができます
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <ProjectFilterButtonWrapper />
-            <CreateButton
-              title="プロジェクトを新規作成"
-              formComponent={ProjectCreateForm}
-              resourcePath="projects"
-            />
-          </div>
-        </div>
-
-        {/* データテーブル部分（2分割可能） */}
-        <div className="flex-1 flex gap-0 min-h-0 h-full">
-          {/* フィルターパネル */}
-          <div className="mr-6">
-            <ProjectFilterPanelWrapper />
-          </div>
-
-          {/* データテーブル */}
-          <div className="flex-1 min-w-0">
-            <ProjectTable
-              projects={projectsWithNumberAmount}
-              total={total}
-              page={page}
-              limit={limit}
-              skip={skip}
-              totalPages={totalPages}
-              searchParams={searchParams}
-            />
-          </div>
-        </div>
-      </div>
+      <ProjectsPageClient
+        projects={projectsWithNumberAmount}
+        total={total}
+        page={page}
+        limit={limit}
+        skip={skip}
+        totalPages={totalPages}
+        searchParams={searchParams}
+      />
     </MainLayout>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import PaginationHeader from "@/components/common/pagination-header";
+import { useTableSelection } from "@/hooks/use-table-selection";
 
 interface Company {
   id: string;
@@ -26,6 +28,7 @@ interface CompanyTableProps {
   skip: number;
   totalPages: number;
   searchParams: Record<string, string | undefined>;
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
 export default function CompanyTable({
@@ -36,7 +39,18 @@ export default function CompanyTable({
   skip,
   totalPages,
   searchParams,
+  onSelectionChange,
 }: CompanyTableProps) {
+  const router = useRouter();
+  const {
+    selectedIds,
+    selectAllCheckboxRef,
+    isAllSelected,
+    isIndeterminate,
+    handleSelectAll,
+    handleSelectOne,
+    handleClick,
+  } = useTableSelection(companies, onSelectionChange);
   return (
     <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden h-full flex flex-col">
       {/* データ件数とページネーション */}
@@ -48,6 +62,14 @@ export default function CompanyTable({
         totalPages={totalPages}
         searchParams={searchParams}
         basePath="/companies"
+        filterLabels={{
+          postalCode: "郵便番号",
+          address: "住所",
+          phone: "電話番号",
+          email: "メール",
+          updatedAfter: "更新日（以降）",
+          updatedBefore: "更新日（以前）",
+        }}
       />
 
       {companies.length === 0 ? (
@@ -60,6 +82,15 @@ export default function CompanyTable({
             <table className="min-w-full">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">
+                    <input
+                      type="checkbox"
+                      ref={selectAllCheckboxRef}
+                      checked={isAllSelected}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     会社名
                   </th>
@@ -87,11 +118,20 @@ export default function CompanyTable({
                 </tr>
               </thead>
               <tbody className="bg-white">
-                {companies.map((company) => (
+                {companies.map((company, index) => (
                   <tr
                     key={company.id}
                     className="hover:bg-gray-50 transition-colors border-b border-gray-200"
                   >
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(company.id)}
+                        onClick={handleClick}
+                        onChange={(e) => handleSelectOne(company.id, e.target.checked, index)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/companies/${company.id}`}

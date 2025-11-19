@@ -27,33 +27,80 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const companyId = searchParams.get("companyId");
     const projectId = searchParams.get("projectId");
+    const model = searchParams.get("model");
+    const serialNumber = searchParams.get("serialNumber");
+    const location = searchParams.get("location");
+    const updatedAfter = searchParams.get("updatedAfter");
+    const updatedBefore = searchParams.get("updatedBefore");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const whereConditions: any[] = [];
 
     // 検索条件
     if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { model: { contains: search } },
-        { serialNumber: { contains: search } },
-        { location: { contains: search } },
-        { notes: { contains: search } },
-        { company: { name: { contains: search } } },
-      ];
+      whereConditions.push({
+        OR: [
+          { name: { contains: search } },
+          { model: { contains: search } },
+          { serialNumber: { contains: search } },
+          { location: { contains: search } },
+          { notes: { contains: search } },
+          { company: { name: { contains: search } } },
+        ],
+      });
     }
 
     // 取引先フィルター
     if (companyId) {
-      where.companyId = companyId;
+      whereConditions.push({
+        companyId: companyId,
+      });
     }
 
     // プロジェクトフィルター
     if (projectId) {
-      where.projectId = projectId;
+      whereConditions.push({
+        projectId: projectId,
+      });
     }
+
+    // 機種・型式フィルター
+    if (model) {
+      whereConditions.push({
+        model: { contains: model },
+      });
+    }
+
+    // 製造番号フィルター
+    if (serialNumber) {
+      whereConditions.push({
+        serialNumber: { contains: serialNumber },
+      });
+    }
+
+    // 設置場所フィルター
+    if (location) {
+      whereConditions.push({
+        location: { contains: location },
+      });
+    }
+
+    // 更新日時フィルター
+    if (updatedAfter) {
+      whereConditions.push({
+        updatedAt: { gte: new Date(updatedAfter) },
+      });
+    }
+
+    if (updatedBefore) {
+      whereConditions.push({
+        updatedAt: { lte: new Date(updatedBefore) },
+      });
+    }
+
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
     const [equipment, total] = await Promise.all([
       prisma.equipment.findMany({

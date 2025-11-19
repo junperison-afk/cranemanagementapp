@@ -31,60 +31,101 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get("userId");
     const workType = searchParams.get("workType");
     const overallJudgment = searchParams.get("overallJudgment");
+    const findings = searchParams.get("findings");
+    const resultSummary = searchParams.get("resultSummary");
     const inspectionDateAfter = searchParams.get("inspectionDateAfter");
     const inspectionDateBefore = searchParams.get("inspectionDateBefore");
+    const updatedAfter = searchParams.get("updatedAfter");
+    const updatedBefore = searchParams.get("updatedBefore");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const whereConditions: any[] = [];
 
     // 検索条件
     if (search) {
-      where.OR = [
-        { findings: { contains: search } },
-        { summary: { contains: search } },
-        { additionalNotes: { contains: search } },
-        { equipment: { name: { contains: search } } },
-        { user: { name: { contains: search } } },
-        { user: { email: { contains: search } } },
-      ];
+      whereConditions.push({
+        OR: [
+          { findings: { contains: search } },
+          { summary: { contains: search } },
+          { additionalNotes: { contains: search } },
+          { equipment: { name: { contains: search } } },
+          { user: { name: { contains: search } } },
+          { user: { email: { contains: search } } },
+        ],
+      });
     }
 
     // 機器フィルター
     if (equipmentId) {
-      where.equipmentId = equipmentId;
+      whereConditions.push({
+        equipmentId: equipmentId,
+      });
     }
 
     // 担当者フィルター
     if (userId) {
-      where.userId = userId;
+      whereConditions.push({
+        userId: userId,
+      });
     }
 
     // 作業タイプフィルター
     if (workType) {
-      where.workType = workType;
+      whereConditions.push({
+        workType: workType,
+      });
     }
 
     // 総合判定フィルター
     if (overallJudgment) {
-      where.overallJudgment = overallJudgment;
+      whereConditions.push({
+        overallJudgment: overallJudgment,
+      });
+    }
+
+    // 所見フィルター
+    if (findings) {
+      whereConditions.push({
+        findings: { contains: findings },
+      });
+    }
+
+    // 結果サマリフィルター
+    if (resultSummary) {
+      whereConditions.push({
+        summary: { contains: resultSummary },
+      });
     }
 
     // 点検日フィルター
     if (inspectionDateAfter) {
-      where.inspectionDate = {
-        ...where.inspectionDate,
-        gte: new Date(inspectionDateAfter),
-      };
+      whereConditions.push({
+        inspectionDate: { gte: new Date(inspectionDateAfter) },
+      });
     }
 
     if (inspectionDateBefore) {
-      where.inspectionDate = {
-        ...where.inspectionDate,
-        lte: new Date(inspectionDateBefore),
-      };
+      whereConditions.push({
+        inspectionDate: { lte: new Date(inspectionDateBefore) },
+      });
     }
+
+    // 更新日時フィルター
+    if (updatedAfter) {
+      whereConditions.push({
+        updatedAt: { gte: new Date(updatedAfter) },
+      });
+    }
+
+    if (updatedBefore) {
+      whereConditions.push({
+        updatedAt: { lte: new Date(updatedBefore) },
+      });
+    }
+
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
     const [inspectionRecords, total] = await Promise.all([
       prisma.inspectionRecord.findMany({

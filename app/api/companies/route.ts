@@ -25,19 +25,56 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
+    const postalCode = searchParams.get("postalCode");
+    const address = searchParams.get("address");
+    const phone = searchParams.get("phone");
+    const email = searchParams.get("email");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
 
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search } },
-            { address: { contains: search } },
-            { email: { contains: search } },
-          ],
-        }
-      : {};
+    const whereConditions: any[] = [];
+
+    // 検索条件
+    if (search) {
+      whereConditions.push({
+        OR: [
+          { name: { contains: search } },
+          { address: { contains: search } },
+          { email: { contains: search } },
+        ],
+      });
+    }
+
+    // 郵便番号フィルター
+    if (postalCode) {
+      whereConditions.push({
+        postalCode: { contains: postalCode },
+      });
+    }
+
+    // 住所フィルター
+    if (address) {
+      whereConditions.push({
+        address: { contains: address },
+      });
+    }
+
+    // 電話番号フィルター
+    if (phone) {
+      whereConditions.push({
+        phone: { contains: phone },
+      });
+    }
+
+    // メールフィルター
+    if (email) {
+      whereConditions.push({
+        email: { contains: email },
+      });
+    }
+
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
     const [companies, total] = await Promise.all([
       prisma.company.findMany({

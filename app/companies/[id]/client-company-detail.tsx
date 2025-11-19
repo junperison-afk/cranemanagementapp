@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
 import ContactCreateForm from "@/components/contacts/contact-create-form";
@@ -44,6 +46,7 @@ export default function ClientCompanyDetail({
   canEdit,
 }: ClientCompanyDetailProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [company, setCompany] = useState(initialCompany);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "history">("overview");
@@ -161,11 +164,21 @@ export default function ClientCompanyDetail({
             </p>
           </div>
         </div>
-        {canEdit && (
-          <div className="text-sm text-gray-500">
-            {isSaving && "保存中..."}
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {session?.user.role === "ADMIN" && (
+            <DeleteItemButton
+              apiPath="/api/companies"
+              itemId={company.id}
+              resourceName="取引先"
+              redirectPath="/companies"
+            />
+          )}
+          {canEdit && (
+            <div className="text-sm text-gray-500">
+              {isSaving && "保存中..."}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* タブ */}

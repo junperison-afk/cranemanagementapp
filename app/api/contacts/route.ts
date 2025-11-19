@@ -24,28 +24,73 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search") || "";
     const companyId = searchParams.get("companyId");
+    const position = searchParams.get("position");
+    const phone = searchParams.get("phone");
+    const email = searchParams.get("email");
+    const updatedAfter = searchParams.get("updatedAfter");
+    const updatedBefore = searchParams.get("updatedBefore");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const whereConditions: any[] = [];
 
     // 検索条件
     if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { position: { contains: search } },
-        { phone: { contains: search } },
-        { email: { contains: search } },
-        { notes: { contains: search } },
-        { company: { name: { contains: search } } },
-      ];
+      whereConditions.push({
+        OR: [
+          { name: { contains: search } },
+          { position: { contains: search } },
+          { phone: { contains: search } },
+          { email: { contains: search } },
+          { notes: { contains: search } },
+          { company: { name: { contains: search } } },
+        ],
+      });
     }
 
     // 取引先フィルター
     if (companyId) {
-      where.companyId = companyId;
+      whereConditions.push({
+        companyId: companyId,
+      });
     }
+
+    // 役職フィルター
+    if (position) {
+      whereConditions.push({
+        position: { contains: position },
+      });
+    }
+
+    // 電話番号フィルター
+    if (phone) {
+      whereConditions.push({
+        phone: { contains: phone },
+      });
+    }
+
+    // メールフィルター
+    if (email) {
+      whereConditions.push({
+        email: { contains: email },
+      });
+    }
+
+    // 更新日時フィルター
+    if (updatedAfter) {
+      whereConditions.push({
+        updatedAt: { gte: new Date(updatedAfter) },
+      });
+    }
+
+    if (updatedBefore) {
+      whereConditions.push({
+        updatedAt: { lte: new Date(updatedBefore) },
+      });
+    }
+
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
     const [contacts, total] = await Promise.all([
       prisma.companyContact.findMany({

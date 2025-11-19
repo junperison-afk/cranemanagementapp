@@ -2,13 +2,7 @@ import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { prisma } from "@/lib/prisma";
-import {
-  ContactFilterButtonWrapper,
-  ContactFilterPanelWrapper,
-} from "@/components/contacts/contact-filters-wrapper";
-import ContactTable from "@/components/contacts/contact-table";
-import CreateButton from "@/components/common/create-button";
-import ContactCreateForm from "@/components/contacts/contact-create-form";
+import ContactsPageClient from "@/components/contacts/contacts-page-client";
 
 // 常に最新のデータを取得するため、動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -21,6 +15,11 @@ export default async function ContactsPage({
     page?: string;
     limit?: string;
     companyId?: string;
+    position?: string;
+    phone?: string;
+    email?: string;
+    updatedAfter?: string;
+    updatedBefore?: string;
   };
 }) {
   const session = await getSession();
@@ -57,6 +56,40 @@ export default async function ContactsPage({
     });
   }
 
+  // 役職フィルター
+  if (searchParams.position) {
+    whereConditions.push({
+      position: { contains: searchParams.position },
+    });
+  }
+
+  // 電話番号フィルター
+  if (searchParams.phone) {
+    whereConditions.push({
+      phone: { contains: searchParams.phone },
+    });
+  }
+
+  // メールフィルター
+  if (searchParams.email) {
+    whereConditions.push({
+      email: { contains: searchParams.email },
+    });
+  }
+
+  // 更新日時フィルター
+  if (searchParams.updatedAfter) {
+    whereConditions.push({
+      updatedAt: { gte: new Date(searchParams.updatedAfter) },
+    });
+  }
+
+  if (searchParams.updatedBefore) {
+    whereConditions.push({
+      updatedAt: { lte: new Date(searchParams.updatedBefore) },
+    });
+  }
+
   const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
   const [contacts, total] = await Promise.all([
@@ -83,46 +116,15 @@ export default async function ContactsPage({
 
   return (
     <MainLayout>
-      <div className="h-full flex flex-col">
-        {/* ヘッダー */}
-        <div className="flex items-center justify-between flex-shrink-0 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">連絡先一覧</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              連絡先の検索・管理ができます
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <ContactFilterButtonWrapper />
-            <CreateButton
-              title="連絡先を新規作成"
-              formComponent={ContactCreateForm}
-              resourcePath="contacts"
-            />
-          </div>
-        </div>
-
-        {/* データテーブル部分（2分割可能） */}
-        <div className="flex-1 flex gap-0 min-h-0 h-full">
-          {/* フィルターパネル */}
-          <div className="mr-6">
-            <ContactFilterPanelWrapper />
-          </div>
-
-          {/* データテーブル */}
-          <div className="flex-1 min-w-0">
-            <ContactTable
-              contacts={contacts}
-              total={total}
-              page={page}
-              limit={limit}
-              skip={skip}
-              totalPages={totalPages}
-              searchParams={searchParams}
-            />
-          </div>
-        </div>
-      </div>
+      <ContactsPageClient
+        contacts={contacts}
+        total={total}
+        page={page}
+        limit={limit}
+        skip={skip}
+        totalPages={totalPages}
+        searchParams={searchParams}
+      />
     </MainLayout>
   );
 }

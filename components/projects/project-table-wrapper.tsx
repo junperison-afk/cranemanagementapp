@@ -1,30 +1,36 @@
 "use client";
 
-import EquipmentTable from "./equipment-table";
+import ProjectTable from "./project-table";
 import { useSelectionEvent } from "@/hooks/use-selection-event";
 
-interface Equipment {
+interface Project {
   id: string;
-  name: string;
-  model: string | null;
-  serialNumber: string | null;
-  location: string | null;
+  title: string;
+  status: "PLANNING" | "IN_PROGRESS" | "ON_HOLD" | "COMPLETED";
+  startDate: Date | null;
+  endDate: Date | null;
+  amount: number | null;
   updatedAt: Date;
   company: {
     id: string;
     name: string;
   };
-  project: {
+  assignedUser: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
+  salesOpportunity: {
     id: string;
     title: string;
   } | null;
   _count: {
-    inspectionRecords: number;
+    equipment: number;
   };
 }
 
-interface EquipmentTableWrapperProps {
-  equipment: Equipment[];
+interface ProjectTableWrapperProps {
+  projects: Project[];
   total: number;
   page: number;
   limit: number;
@@ -33,20 +39,20 @@ interface EquipmentTableWrapperProps {
   searchParams: Record<string, string | undefined>;
 }
 
-export default function EquipmentTableWrapper({
-  equipment,
+export default function ProjectTableWrapper({
+  projects,
   total,
   page,
   limit,
   skip,
   totalPages,
   searchParams,
-}: EquipmentTableWrapperProps) {
-  const handleSelectionChange = useSelectionEvent("equipmentSelectionChange");
+}: ProjectTableWrapperProps) {
+  const handleSelectionChange = useSelectionEvent("projectSelectionChange");
 
   return (
-    <EquipmentTable
-      equipment={equipment}
+    <ProjectTable
+      projects={projects}
       total={total}
       page={page}
       limit={limit}
@@ -57,3 +63,4 @@ export default function EquipmentTableWrapper({
     />
   );
 }
+

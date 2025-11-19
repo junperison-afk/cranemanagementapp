@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
 import InlineEditLookup from "@/components/companies/inline-edit-lookup";
@@ -67,6 +69,7 @@ export default function ClientSalesOpportunityDetail({
   canEdit,
 }: ClientSalesOpportunityDetailProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [salesOpportunity, setSalesOpportunity] =
     useState(initialSalesOpportunity);
   const [isSaving, setIsSaving] = useState(false);
@@ -148,6 +151,14 @@ export default function ClientSalesOpportunityDetail({
           >
             {statusLabels[salesOpportunity.status]}
           </span>
+          {session?.user.role === "ADMIN" && (
+            <DeleteItemButton
+              apiPath="/api/sales-opportunities"
+              itemId={salesOpportunity.id}
+              resourceName="営業案件"
+              redirectPath="/sales-opportunities"
+            />
+          )}
         </div>
       </div>
 

@@ -11,13 +11,18 @@ export function ProjectFilterButtonWrapper() {
   const isFilterOpen = searchParams.get("filter") === "open";
 
   const activeFilterCount = [
+    searchParams.get("search"),
     searchParams.get("status"),
     searchParams.get("companyId"),
     searchParams.get("assignedUserId"),
+    searchParams.get("amount"),
+    searchParams.get("equipmentCount"),
     searchParams.get("startDateAfter"),
     searchParams.get("startDateBefore"),
     searchParams.get("endDateAfter"),
     searchParams.get("endDateBefore"),
+    searchParams.get("updatedAfter"),
+    searchParams.get("updatedBefore"),
   ].filter((v) => v).length;
 
   const toggleFilter = () => {

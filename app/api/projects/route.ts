@@ -29,35 +29,71 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const companyId = searchParams.get("companyId");
     const assignedUserId = searchParams.get("assignedUserId");
+    const amount = searchParams.get("amount");
+    const updatedAfter = searchParams.get("updatedAfter");
+    const updatedBefore = searchParams.get("updatedBefore");
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "20");
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const whereConditions: any[] = [];
 
     // 検索条件
     if (search) {
-      where.OR = [
-        { title: { contains: search } },
-        { notes: { contains: search } },
-        { company: { name: { contains: search } } },
-      ];
+      whereConditions.push({
+        OR: [
+          { title: { contains: search } },
+          { notes: { contains: search } },
+          { company: { name: { contains: search } } },
+        ],
+      });
     }
 
     // ステータスフィルター
     if (status) {
-      where.status = status;
+      whereConditions.push({
+        status: status,
+      });
     }
 
     // 取引先フィルター
     if (companyId) {
-      where.companyId = companyId;
+      whereConditions.push({
+        companyId: companyId,
+      });
     }
 
     // 担当者フィルター
     if (assignedUserId) {
-      where.assignedUserId = assignedUserId;
+      whereConditions.push({
+        assignedUserId: assignedUserId,
+      });
     }
+
+    // 金額フィルター
+    if (amount) {
+      const amountValue = parseFloat(amount);
+      if (!isNaN(amountValue)) {
+        whereConditions.push({
+          amount: { equals: amountValue },
+        });
+      }
+    }
+
+    // 更新日時フィルター
+    if (updatedAfter) {
+      whereConditions.push({
+        updatedAt: { gte: new Date(updatedAfter) },
+      });
+    }
+
+    if (updatedBefore) {
+      whereConditions.push({
+        updatedAt: { lte: new Date(updatedBefore) },
+      });
+    }
+
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
 
     const [projects, total] = await Promise.all([
       prisma.project.findMany({

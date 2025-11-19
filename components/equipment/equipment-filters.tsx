@@ -3,10 +3,14 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FilterPanelBase from "@/components/common/filter-panel-base";
+import DatePicker from "@/components/common/date-picker";
 
 interface FilterState {
-  companyId?: string;
-  projectId?: string;
+  model?: string;
+  serialNumber?: string;
+  location?: string;
+  updatedAfter?: string;
+  updatedBefore?: string;
 }
 
 interface EquipmentFiltersProps {
@@ -22,14 +26,27 @@ export function EquipmentFilterPanel({
   const searchParams = useSearchParams();
 
   const [filters, setFilters] = useState<FilterState>({
-    companyId: searchParams.get("companyId") || "",
-    projectId: searchParams.get("projectId") || "",
+    model: searchParams.get("model") || "",
+    serialNumber: searchParams.get("serialNumber") || "",
+    location: searchParams.get("location") || "",
+    updatedAfter: searchParams.get("updatedAfter") || "",
+    updatedBefore: searchParams.get("updatedBefore") || "",
   });
+  const [isApplying, setIsApplying] = useState(false);
 
   if (!isOpen) return null;
 
-  const applyFilters = () => {
+  const applyFilters = (searchValue: string) => {
+    setIsApplying(true);
     const params = new URLSearchParams();
+
+    // フィルターパネルを開いたままにする
+    params.set("filter", "open");
+
+    // 全体検索の値を追加
+    if (searchValue) {
+      params.set("search", searchValue);
+    }
 
     Object.entries(filters).forEach(([key, value]) => {
       if (value) {
@@ -37,32 +54,31 @@ export function EquipmentFilterPanel({
       }
     });
 
-    // 検索パラメータを保持
-    const search = searchParams.get("search");
-    if (search) {
-      params.set("search", search);
-    }
-
     // ページをリセット
     params.delete("page");
 
     router.push(`/equipment?${params.toString()}`);
+    setTimeout(() => {
+      setIsApplying(false);
+    }, 500);
   };
 
   const clearFilters = () => {
     setFilters({
-      companyId: "",
-      projectId: "",
+      model: "",
+      serialNumber: "",
+      location: "",
+      updatedAfter: "",
+      updatedBefore: "",
     });
+    // すべてのフィルターをクリア（searchも含む）
+    // フィルターパネルを開いたままにする
     const params = new URLSearchParams();
-    const search = searchParams.get("search");
-    if (search) {
-      params.set("search", search);
-    }
+    params.set("filter", "open");
     router.push(`/equipment?${params.toString()}`);
   };
 
-  const hasActiveFilters = Object.values(filters).some((v) => v);
+  // hasActiveFiltersはFilterPanelBaseで自動判定されるため、削除
 
   if (!isOpen) return null;
 
@@ -74,38 +90,89 @@ export function EquipmentFilterPanel({
       onClose={onClose}
       onApply={applyFilters}
       onClear={clearFilters}
-      hasActiveFilters={hasActiveFilters}
+      isApplying={isApplying}
     >
-            {/* 取引先ID */}
-            <div>
+            {/* 機種・型式 */}
+            <div className="flex-1 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                取引先ID
+                機種・型式
               </label>
               <input
                 type="text"
-                placeholder="取引先IDでフィルター"
-                value={filters.companyId}
+                placeholder="機種・型式でフィルター"
+                value={filters.model || ""}
                 onChange={(e) =>
-                  setFilters({ ...filters, companyId: e.target.value })
+                  setFilters({ ...filters, model: e.target.value })
                 }
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
-            {/* プロジェクトID */}
-            <div>
+            {/* 製造番号 */}
+            <div className="flex-1 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                プロジェクトID
+                製造番号
               </label>
               <input
                 type="text"
-                placeholder="プロジェクトIDでフィルター"
-                value={filters.projectId}
+                placeholder="製造番号でフィルター"
+                value={filters.serialNumber || ""}
                 onChange={(e) =>
-                  setFilters({ ...filters, projectId: e.target.value })
+                  setFilters({ ...filters, serialNumber: e.target.value })
                 }
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
+            </div>
+
+            {/* 設置場所 */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                設置場所
+              </label>
+              <input
+                type="text"
+                placeholder="設置場所でフィルター"
+                value={filters.location || ""}
+                onChange={(e) =>
+                  setFilters({ ...filters, location: e.target.value })
+                }
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* 更新日 */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                更新日
+              </label>
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">以降</label>
+                  <DatePicker
+                    value={filters.updatedAfter || undefined}
+                    onChange={(value) =>
+                      setFilters({
+                        ...filters,
+                        updatedAfter: value,
+                      })
+                    }
+                    placeholder="日付を選択"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">以前</label>
+                  <DatePicker
+                    value={filters.updatedBefore || undefined}
+                    onChange={(value) =>
+                      setFilters({
+                        ...filters,
+                        updatedBefore: value,
+                      })
+                    }
+                    placeholder="日付を選択"
+                  />
+                </div>
+              </div>
             </div>
     </FilterPanelBase>
   );

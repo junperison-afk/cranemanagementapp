@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import PaginationHeader from "@/components/common/pagination-header";
+import { useTableSelection } from "@/hooks/use-table-selection";
 
 interface WorkRecord {
   id: string;
@@ -29,6 +32,7 @@ interface WorkRecordTableProps {
   skip: number;
   totalPages: number;
   searchParams: Record<string, string | undefined>;
+  onSelectionChange?: (selectedIds: string[]) => void;
 }
 
 const workTypeLabels: Record<string, string> = {
@@ -67,7 +71,17 @@ export default function WorkRecordTable({
   skip,
   totalPages,
   searchParams,
+  onSelectionChange,
 }: WorkRecordTableProps) {
+  const {
+    selectedIds,
+    selectAllCheckboxRef,
+    isAllSelected,
+    isIndeterminate,
+    handleSelectAll,
+    handleSelectOne,
+    handleClick,
+  } = useTableSelection(workRecords, onSelectionChange);
   return (
     <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden h-full flex flex-col">
       {workRecords.length === 0 ? (
@@ -84,11 +98,36 @@ export default function WorkRecordTable({
             totalPages={totalPages}
             searchParams={searchParams}
             basePath="/work-records"
+            filterLabels={{
+              equipmentId: "機器",
+              userId: "担当者",
+              workType: "作業タイプ",
+              overallJudgment: "総合判定",
+              findings: "所見",
+              resultSummary: "結果サマリ",
+              inspectionDateAfter: "作業日（以降）",
+              inspectionDateBefore: "作業日（以前）",
+              updatedAfter: "更新日（以降）",
+              updatedBefore: "更新日（以前）",
+            }}
+            filterValueFormatters={{
+              workType: (value) => workTypeLabels[value] || value,
+              overallJudgment: (value) => judgmentLabels[value] || value,
+            }}
           />
           <div className="flex-1 overflow-auto bg-white border-b border-gray-200">
             <table className="min-w-full">
               <thead className="bg-gray-50 sticky top-0">
                 <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 w-12">
+                    <input
+                      type="checkbox"
+                      ref={selectAllCheckboxRef}
+                      checked={isAllSelected}
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     作業日
                   </th>
@@ -119,11 +158,20 @@ export default function WorkRecordTable({
                 </tr>
               </thead>
               <tbody className="bg-white">
-                {workRecords.map((record) => (
+                {workRecords.map((record, index) => (
                   <tr
                     key={record.id}
                     className="hover:bg-gray-50 transition-colors border-b border-gray-200"
                   >
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.has(record.id)}
+                        onClick={handleClick}
+                        onChange={(e) => handleSelectOne(record.id, e.target.checked, index)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(record.inspectionDate).toLocaleDateString("ja-JP")}
                     </td>

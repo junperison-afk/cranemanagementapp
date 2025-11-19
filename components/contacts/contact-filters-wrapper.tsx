@@ -11,7 +11,13 @@ export function ContactFilterButtonWrapper() {
   const isFilterOpen = searchParams.get("filter") === "open";
 
   const activeFilterCount = [
+    searchParams.get("search"),
+    searchParams.get("position"),
     searchParams.get("companyId"),
+    searchParams.get("phone"),
+    searchParams.get("email"),
+    searchParams.get("updatedAfter"),
+    searchParams.get("updatedBefore"),
   ].filter((v) => v).length;
 
   const toggleFilter = () => {

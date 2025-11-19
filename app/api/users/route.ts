@@ -10,7 +10,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
+    const searchParams = request.nextUrl.searchParams;
+    const search = searchParams.get("search") || "";
+    const limit = parseInt(searchParams.get("limit") || "1000");
+
+    const whereConditions: any[] = [];
+
+    // 検索条件
+    if (search) {
+      whereConditions.push({
+        OR: [
+          { name: { contains: search } },
+          { email: { contains: search } },
+        ],
+      });
+    }
+
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
+
     const users = await prisma.user.findMany({
+      where,
       select: {
         id: true,
         name: true,
@@ -19,6 +38,7 @@ export async function GET(request: NextRequest) {
       orderBy: {
         name: "asc",
       },
+      take: limit,
     });
 
     return NextResponse.json({ users });

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
 
@@ -89,6 +91,7 @@ export default function ClientWorkRecordDetail({
   canEdit,
 }: ClientWorkRecordDetailProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [workRecord, setWorkRecord] = useState(initialWorkRecord);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -174,6 +177,14 @@ export default function ClientWorkRecordDetail({
             >
               {judgmentLabels[workRecord.overallJudgment]}
             </span>
+          )}
+          {session?.user.role === "ADMIN" && (
+            <DeleteItemButton
+              apiPath="/api/work-records"
+              itemId={workRecord.id}
+              resourceName="作業記録"
+              redirectPath="/work-records"
+            />
           )}
         </div>
       </div>

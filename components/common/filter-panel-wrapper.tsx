@@ -14,7 +14,7 @@ export default function FilterPanelWrapper({
   return (
     <div
       className={`overflow-hidden flex-shrink-0 h-full transition-all duration-300 ease-in-out ${
-        isOpen ? "w-80" : "w-0"
+        isOpen ? "w-80 mr-6" : "w-0"
       }`}
     >
       <div

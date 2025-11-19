@@ -6,11 +6,10 @@ import FilterPanelBase from "@/components/common/filter-panel-base";
 import DatePicker from "@/components/common/date-picker";
 
 interface FilterState {
-  industryType?: string;
-  billingFlag?: string;
-  hasSalesOpportunities?: string;
-  hasProjects?: string;
-  hasEquipment?: string;
+  postalCode?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   updatedAfter?: string;
   updatedBefore?: string;
 }
@@ -25,19 +24,28 @@ export function CompanyFilterPanel({ isOpen, onClose }: CompanyFiltersProps) {
   const searchParams = useSearchParams();
 
   const [filters, setFilters] = useState<FilterState>({
-    industryType: searchParams.get("industryType") || "",
-    billingFlag: searchParams.get("billingFlag") || "",
-    hasSalesOpportunities: searchParams.get("hasSalesOpportunities") || "",
-    hasProjects: searchParams.get("hasProjects") || "",
-    hasEquipment: searchParams.get("hasEquipment") || "",
+    postalCode: searchParams.get("postalCode") || "",
+    address: searchParams.get("address") || "",
+    phone: searchParams.get("phone") || "",
+    email: searchParams.get("email") || "",
     updatedAfter: searchParams.get("updatedAfter") || "",
     updatedBefore: searchParams.get("updatedBefore") || "",
   });
+  const [isApplying, setIsApplying] = useState(false);
 
   if (!isOpen) return null;
 
-  const applyFilters = () => {
+  const applyFilters = (searchValue: string) => {
+    setIsApplying(true);
     const params = new URLSearchParams();
+    
+    // フィルターパネルを開いたままにする
+    params.set("filter", "open");
+    
+    // 全体検索の値を追加
+    if (searchValue) {
+      params.set("search", searchValue);
+    }
     
     Object.entries(filters).forEach(([key, value]) => {
       if (value) {
@@ -49,22 +57,29 @@ export function CompanyFilterPanel({ isOpen, onClose }: CompanyFiltersProps) {
     params.delete("page");
     
     router.push(`/companies?${params.toString()}`);
+    // ナビゲーション完了後に状態をリセット（実際のナビゲーション完了を待つため少し遅延）
+    setTimeout(() => {
+      setIsApplying(false);
+    }, 500);
   };
 
   const clearFilters = () => {
     setFilters({
-      industryType: "",
-      billingFlag: "",
-      hasSalesOpportunities: "",
-      hasProjects: "",
-      hasEquipment: "",
+      postalCode: "",
+      address: "",
+      phone: "",
+      email: "",
       updatedAfter: "",
       updatedBefore: "",
     });
-    router.push("/companies");
+    // すべてのフィルターをクリア（searchも含む）
+    // フィルターパネルを開いたままにする
+    const params = new URLSearchParams();
+    params.set("filter", "open");
+    router.push(`/companies?${params.toString()}`);
   };
 
-  const hasActiveFilters = Object.values(filters).some((v) => v);
+  // hasActiveFiltersはFilterPanelBaseで自動判定されるため、削除
 
   if (!isOpen) return null;
 
@@ -76,101 +91,76 @@ export function CompanyFilterPanel({ isOpen, onClose }: CompanyFiltersProps) {
       onClose={onClose}
       onApply={applyFilters}
       onClear={clearFilters}
-      hasActiveFilters={hasActiveFilters}
+      isApplying={isApplying}
     >
-            {/* 業種 */}
-            <div>
+            {/* 郵便番号 */}
+            <div className="flex-1 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                業種
+                郵便番号
               </label>
               <input
                 type="text"
-                placeholder="業種でフィルター"
-                value={filters.industryType}
+                placeholder="郵便番号でフィルター"
+                value={filters.postalCode || ""}
                 onChange={(e) =>
-                  setFilters({ ...filters, industryType: e.target.value })
+                  setFilters({ ...filters, postalCode: e.target.value })
                 }
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
 
-            {/* 請求フラグ */}
-            <div>
+            {/* 住所 */}
+            <div className="flex-1 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                請求フラグ
+                住所
               </label>
-              <select
-                value={filters.billingFlag}
+              <input
+                type="text"
+                placeholder="住所でフィルター"
+                value={filters.address || ""}
                 onChange={(e) =>
-                  setFilters({ ...filters, billingFlag: e.target.value })
+                  setFilters({ ...filters, address: e.target.value })
                 }
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">すべて</option>
-                <option value="true">有効</option>
-                <option value="false">無効</option>
-              </select>
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
             </div>
 
-            {/* 関連情報の有無 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                関連情報
+            {/* 電話番号 */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                電話番号
               </label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.hasSalesOpportunities === "true"}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        hasSalesOpportunities: e.target.checked ? "true" : "",
-                      })
-                    }
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    営業案件あり
-                  </span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.hasProjects === "true"}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        hasProjects: e.target.checked ? "true" : "",
-                      })
-                    }
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">
-                    プロジェクトあり
-                  </span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.hasEquipment === "true"}
-                    onChange={(e) =>
-                      setFilters({
-                        ...filters,
-                        hasEquipment: e.target.checked ? "true" : "",
-                      })
-                    }
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">機器あり</span>
-                </label>
-              </div>
+              <input
+                type="text"
+                placeholder="電話番号でフィルター"
+                value={filters.phone || ""}
+                onChange={(e) =>
+                  setFilters({ ...filters, phone: e.target.value })
+                }
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
             </div>
 
-            {/* 更新日時 */}
-            <div>
+            {/* メール */}
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                メール
+              </label>
+              <input
+                type="text"
+                placeholder="メールでフィルター"
+                value={filters.email || ""}
+                onChange={(e) =>
+                  setFilters({ ...filters, email: e.target.value })
+                }
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            {/* 更新日 */}
+            <div className="flex-1 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                更新日時
+                更新日
               </label>
               <div className="space-y-2">
                 <div>

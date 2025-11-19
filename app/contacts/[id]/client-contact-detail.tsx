@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react";
+import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 
 interface Contact {
@@ -34,6 +36,7 @@ export default function ClientContactDetail({
   canEdit,
 }: ClientContactDetailProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [contact, setContact] = useState(initialContact);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -94,6 +97,16 @@ export default function ClientContactDetail({
               </Link>
             </p>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {session?.user.role === "ADMIN" && (
+            <DeleteItemButton
+              apiPath="/api/contacts"
+              itemId={contact.id}
+              resourceName="連絡先"
+              redirectPath="/contacts"
+            />
+          )}
         </div>
       </div>
 
