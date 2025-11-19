@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { createAuditLog } from "@/lib/audit-log";
 
 const inspectionRecordUpdateSchema = z.object({
   equipmentId: z.string().min(1).optional(),
@@ -95,6 +96,18 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = inspectionRecordUpdateSchema.parse(body);
 
+    // 既存データを取得（変更前の値を記録するため）
+    const existingInspectionRecord = await prisma.inspectionRecord.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!existingInspectionRecord) {
+      return NextResponse.json(
+        { error: "作業記録が見つかりません" },
+        { status: 404 }
+      );
+    }
+
     const updateData: any = {};
     if (validatedData.equipmentId !== undefined)
       updateData.equipmentId = validatedData.equipmentId;
@@ -115,6 +128,26 @@ export async function PATCH(
     if (validatedData.checklistData !== undefined)
       updateData.checklistData = validatedData.checklistData;
     if (validatedData.photos !== undefined) updateData.photos = validatedData.photos;
+
+    // 変更されたフィールドを特定
+    const changes: Array<{
+      field: string;
+      oldValue?: any;
+      newValue?: any;
+    }> = [];
+
+    Object.keys(updateData).forEach((key) => {
+      const oldValue = existingInspectionRecord[key as keyof typeof existingInspectionRecord];
+      const newValue = updateData[key];
+
+      if (oldValue !== newValue) {
+        changes.push({
+          field: key,
+          oldValue,
+          newValue,
+        });
+      }
+    });
 
     const inspectionRecord = await prisma.inspectionRecord.update({
       where: { id: params.id },
@@ -145,6 +178,21 @@ export async function PATCH(
         },
       },
     });
+
+    // 変更履歴を記録
+    if (changes.length > 0) {
+      if (changes.length === 1) {
+        await createAuditLog("WorkRecord", params.id, "UPDATE", {
+          field: changes[0].field,
+          oldValue: changes[0].oldValue,
+          newValue: changes[0].newValue,
+        });
+      } else {
+        await createAuditLog("WorkRecord", params.id, "UPDATE", {
+          multipleChanges: changes,
+        });
+      }
+    }
 
     return NextResponse.json(inspectionRecord);
   } catch (error) {
@@ -181,11 +229,16 @@ export async function DELETE(
       );
     }
 
+    // 削除前に履歴を記録
+    await createAuditLog("WorkRecord", params.id, "DELETE", {
+      newValue: { deleted: true },
+    });
+
     await prisma.inspectionRecord.delete({
       where: { id: params.id },
     });
 
-      return NextResponse.json({ message: "作業記録を削除しました" });
+    return NextResponse.json({ message: "作業記録を削除しました" });
   } catch (error) {
     console.error("作業記録削除エラー:", error);
     return NextResponse.json(

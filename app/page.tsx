@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import QuickCreateButtons from "@/components/home/quick-create-buttons";
 
 export default async function Home() {
   const session = await getSession();
@@ -48,6 +49,9 @@ export default async function Home() {
             プロジェクトと営業案件の概要を確認できます
           </p>
         </div>
+
+        {/* クイック作成ボタン */}
+        <QuickCreateButtons />
 
         {/* 進行中プロジェクト */}
         <div>

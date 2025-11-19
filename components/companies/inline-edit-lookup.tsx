@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { PencilIcon, CheckIcon, XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { startLoadingBar } from "@/lib/navigation-helper";
 import LookupField from "@/components/common/lookup-field";
 
 interface InlineEditLookupProps {
@@ -110,8 +111,15 @@ export default function InlineEditLookup({
     }
   };
 
-  const handleCreateSuccess = (id: string) => {
+  const handleCreateSuccess = (idOrData: string | any) => {
     setIsCreateModalOpen(false);
+    // idまたはidを含むデータを受け取る（後方互換性のため）
+    const id = typeof idOrData === "string" ? idOrData : idOrData?.id;
+    if (!id) return;
+    
+    // ローディングバーを開始
+    startLoadingBar();
+    
     // returnUrlがあればそこに戻る、なければ作成したレコードの詳細画面に遷移
     if (returnUrl) {
       router.push(returnUrl);
@@ -134,6 +142,8 @@ export default function InlineEditLookup({
     if (createFormComponent) {
       setIsCreateModalOpen(true);
     } else if (createNewUrl) {
+      // ローディングバーを開始
+      startLoadingBar();
       // フォームコンポーネントが指定されていない場合はページ遷移
       const url = createNewUrl + (createNewUrl.includes("?") ? "&" : "?") + (returnUrl ? `returnUrl=${encodeURIComponent(returnUrl)}` : "");
       router.push(url);

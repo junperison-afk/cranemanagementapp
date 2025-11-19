@@ -94,7 +94,7 @@ export default function ClientSalesOpportunityDetail({
       }
 
       const updated = await response.json();
-      // 既存の関連データを保持
+      // 既存の関連データを保持して即座に更新（router.refreshは不要）
       setSalesOpportunity({
         ...updated,
         quotes: salesOpportunity.quotes,
@@ -102,7 +102,6 @@ export default function ClientSalesOpportunityDetail({
         project: salesOpportunity.project,
         _count: salesOpportunity._count,
       });
-      router.refresh();
     } catch (error) {
       console.error("更新エラー:", error);
       alert("更新に失敗しました");
@@ -261,7 +260,7 @@ export default function ClientSalesOpportunityDetail({
                 href={`/sales-opportunities/${salesOpportunity.id}/quotes/new`}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                新規作成
+                + 追加
               </Link>
             )}
           </div>

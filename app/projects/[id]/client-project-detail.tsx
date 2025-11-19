@@ -99,13 +99,12 @@ export default function ClientProjectDetail({
       }
 
       const updated = await response.json();
-      // 既存の関連データを保持
+      // 既存の関連データを保持して即座に更新（router.refreshは不要）
       setProject({
         ...updated,
         equipment: project.equipment,
         _count: project._count,
       });
-      router.refresh();
     } catch (error) {
       console.error("更新エラー:", error);
       alert("更新に失敗しました");
@@ -295,7 +294,7 @@ export default function ClientProjectDetail({
               href={`/projects/${project.id}/equipment/new`}
               className="text-sm text-blue-600 hover:text-blue-800"
             >
-              機器を追加
+              + 追加
             </Link>
           )}
         </div>

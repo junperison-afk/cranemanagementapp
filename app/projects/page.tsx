@@ -10,6 +10,9 @@ import ProjectTable from "@/components/projects/project-table";
 import CreateButton from "@/components/common/create-button";
 import ProjectCreateForm from "@/components/projects/project-create-form";
 
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
 export default async function ProjectsPage({
   searchParams,
 }: {

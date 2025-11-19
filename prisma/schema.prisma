@@ -24,6 +24,7 @@ model User {
   // リレーション
   inspectionRecords InspectionRecord[]
   projects         Project[]
+  auditLogs        AuditLog[]
 
   @@map("users")
 }
@@ -238,5 +239,33 @@ enum InspectionJudgment {
   CAUTION   // 注意
   BAD       // 不良
   REPAIR    // 要修理
+}
+
+// 変更履歴
+model AuditLog {
+  id          String      @id @default(cuid())
+  entityType  String      // エンティティの種類（"Company", "SalesOpportunity", "Project"など）
+  entityId    String      // エンティティのID
+  action      AuditAction // アクションタイプ（作成、更新、削除など）
+  field       String?     // 変更されたフィールド名（複数フィールドの変更時はnull）
+  oldValue    String?     // 変更前の値（JSON形式）
+  newValue    String?     // 変更後の値（JSON形式）
+  changes     String?     // 複数フィールドの変更情報（JSON形式）
+  userId      String?     // 実行者のユーザーID（オプショナル）
+  memo        String?     // メモ
+  createdAt   DateTime    @default(now())
+
+  // リレーション
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+enum AuditAction {
+  CREATE  // 作成
+  UPDATE  // 更新
+  DELETE  // 削除
 }
 

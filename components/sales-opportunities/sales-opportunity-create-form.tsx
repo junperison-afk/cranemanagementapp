@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -22,8 +22,9 @@ const salesOpportunityFormSchema = z.object({
 type SalesOpportunityFormData = z.infer<typeof salesOpportunityFormSchema>;
 
 interface SalesOpportunityCreateFormProps {
-  onSuccess: (id: string) => void;
+  onSuccess: (salesOpportunity: any) => void; // 作成した営業案件データ全体を返す
   onCancel: () => void;
+  defaultCompanyId?: string; // 初期値として設定する取引先ID
 }
 
 
@@ -33,6 +34,7 @@ interface SalesOpportunityCreateFormProps {
 export default function SalesOpportunityCreateForm({
   onSuccess,
   onCancel,
+  defaultCompanyId,
 }: SalesOpportunityCreateFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,8 +49,17 @@ export default function SalesOpportunityCreateForm({
     resolver: zodResolver(salesOpportunityFormSchema),
     defaultValues: {
       status: "ESTIMATING",
+      companyId: defaultCompanyId || "",
     },
+    shouldFocusError: false, // バリデーションエラー時の自動フォーカスを無効化
   });
+
+  // defaultCompanyIdが変更された場合に値を設定
+  useEffect(() => {
+    if (defaultCompanyId) {
+      setValue("companyId", defaultCompanyId, { shouldValidate: true });
+    }
+  }, [defaultCompanyId, setValue]);
 
   const onSubmit = async (data: SalesOpportunityFormData) => {
     setIsSubmitting(true);
@@ -74,7 +85,7 @@ export default function SalesOpportunityCreateForm({
       }
 
       const salesOpportunity = await response.json();
-      onSuccess(salesOpportunity.id);
+      onSuccess(salesOpportunity);
     } catch (err) {
       setError(
         err instanceof Error
@@ -184,7 +195,7 @@ export default function SalesOpportunityCreateForm({
             type="number"
             id="craneCount"
             min="1"
-            {...register("craneCount", { valueAsNumber: true })}
+            {...register("craneCount")}
             placeholder="例: 5"
             className="mt-1 block w-full rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm text-gray-900 placeholder:text-gray-400"
           />

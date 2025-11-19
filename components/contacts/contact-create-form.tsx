@@ -23,7 +23,7 @@ const contactFormSchema = z.object({
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
 interface ContactCreateFormProps {
-  onSuccess: (id: string) => void;
+  onSuccess: (contact: any) => void; // 作成した連絡先データ全体を返す
   onCancel: () => void;
   defaultCompanyId?: string; // 初期値として設定する取引先ID
 }
@@ -79,7 +79,7 @@ export default function ContactCreateForm({
       }
 
       const contact = await response.json();
-      onSuccess(contact.id);
+      onSuccess(contact);
     } catch (err) {
       setError(err instanceof Error ? err.message : "連絡先の作成に失敗しました");
     } finally {

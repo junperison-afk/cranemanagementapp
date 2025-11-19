@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
+import { navigateWithLoading } from "@/lib/navigation-helper";
 
 interface CreateButtonProps {
   /** モーダルに表示するタイトル */
@@ -33,10 +34,17 @@ export default function CreateButton({
     return null;
   }
 
-  const handleSuccess = (id: string) => {
-    setIsOpen(false);
-    // 作成したレコードの詳細画面に遷移
-    window.location.href = `/${resourcePath}/${id}`;
+  const handleSuccess = (idOrData: string | any) => {
+    // idまたはidを含むデータを受け取る（後方互換性のため）
+    const id = typeof idOrData === "string" ? idOrData : idOrData?.id;
+    if (id) {
+      // モーダルを閉じる前にローディングバーを開始（モーダルの閉じる処理とページ遷移のタイミングを調整）
+      navigateWithLoading(`/${resourcePath}/${id}`);
+      // モーダルを閉じる（ページ遷移が始まるので、実際には見えなくなる）
+      setIsOpen(false);
+    } else {
+      setIsOpen(false);
+    }
   };
 
   const handleCancel = () => {

@@ -1,8 +1,9 @@
 "use client";
 
 import { ReactNode } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useRouterWithLoading } from "@/hooks/use-router-with-loading";
 
 interface FilterPanelBaseProps {
   title: string;
@@ -25,7 +26,7 @@ export default function FilterPanelBase({
   onClear,
   hasActiveFilters,
 }: FilterPanelBaseProps) {
-  const router = useRouter();
+  const router = useRouterWithLoading();
   const searchParams = useSearchParams();
 
   return (

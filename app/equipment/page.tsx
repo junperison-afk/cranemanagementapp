@@ -10,6 +10,9 @@ import EquipmentTableWrapper from "@/components/equipment/equipment-table-wrappe
 import CreateButton from "@/components/common/create-button";
 import EquipmentCreateForm from "@/components/equipment/equipment-create-form";
 
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
 export default async function EquipmentPage({
   searchParams,
 }: {

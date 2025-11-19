@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { createAuditLog } from "@/lib/audit-log";
 
 const inspectionRecordSchema = z.object({
   equipmentId: z.string().min(1, "機器は必須です"),
@@ -179,6 +180,11 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    });
+
+    // 作成履歴を記録
+    await createAuditLog("WorkRecord", inspectionRecord.id, "CREATE", {
+      newValue: inspectionRecord,
     });
 
     return NextResponse.json(inspectionRecord, { status: 201 });

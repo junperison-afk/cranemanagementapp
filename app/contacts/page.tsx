@@ -10,6 +10,9 @@ import ContactTable from "@/components/contacts/contact-table";
 import CreateButton from "@/components/common/create-button";
 import ContactCreateForm from "@/components/contacts/contact-create-form";
 
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
 export default async function ContactsPage({
   searchParams,
 }: {

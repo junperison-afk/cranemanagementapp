@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { createAuditLog } from "@/lib/audit-log";
 
 const equipmentUpdateSchema = z.object({
   companyId: z.string().min(1).optional(),
@@ -107,6 +108,18 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = equipmentUpdateSchema.parse(body);
 
+    // 既存データを取得（変更前の値を記録するため）
+    const existingEquipment = await prisma.equipment.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!existingEquipment) {
+      return NextResponse.json(
+        { error: "機器が見つかりません" },
+        { status: 404 }
+      );
+    }
+
     const updateData: any = {};
     if (validatedData.companyId !== undefined)
       updateData.companyId = validatedData.companyId;
@@ -123,6 +136,26 @@ export async function PATCH(
       updateData.specifications = validatedData.specifications;
     if (validatedData.notes !== undefined)
       updateData.notes = validatedData.notes;
+
+    // 変更されたフィールドを特定
+    const changes: Array<{
+      field: string;
+      oldValue?: any;
+      newValue?: any;
+    }> = [];
+
+    Object.keys(updateData).forEach((key) => {
+      const oldValue = existingEquipment[key as keyof typeof existingEquipment];
+      const newValue = updateData[key];
+
+      if (oldValue !== newValue) {
+        changes.push({
+          field: key,
+          oldValue,
+          newValue,
+        });
+      }
+    });
 
     const equipment = await prisma.equipment.update({
       where: { id: params.id },
@@ -168,6 +201,21 @@ export async function PATCH(
       },
     });
 
+    // 変更履歴を記録
+    if (changes.length > 0) {
+      if (changes.length === 1) {
+        await createAuditLog("Equipment", params.id, "UPDATE", {
+          field: changes[0].field,
+          oldValue: changes[0].oldValue,
+          newValue: changes[0].newValue,
+        });
+      } else {
+        await createAuditLog("Equipment", params.id, "UPDATE", {
+          multipleChanges: changes,
+        });
+      }
+    }
+
     return NextResponse.json(equipment);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -202,6 +250,11 @@ export async function DELETE(
         { status: 403 }
       );
     }
+
+    // 削除前に履歴を記録
+    await createAuditLog("Equipment", params.id, "DELETE", {
+      newValue: { deleted: true },
+    });
 
     await prisma.equipment.delete({
       where: { id: params.id },

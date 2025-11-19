@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { navigateWithLoading } from "@/lib/navigation-helper";
 
 interface PaginationHeaderProps {
   total: number;
@@ -40,8 +41,8 @@ export default function PaginationHeader({
             params.set("limit", e.target.value);
             // ページを1にリセット
             params.set("page", "1");
-            // URLを更新
-            window.location.href = `${basePath}?${params.toString()}`;
+            // URLを更新（ローディングバー付き）
+            navigateWithLoading(`${basePath}?${params.toString()}`);
           }}
           className="px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >

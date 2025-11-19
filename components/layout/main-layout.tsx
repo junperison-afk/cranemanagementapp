@@ -6,7 +6,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <div className="flex h-screen bg-white">
       <Sidebar />
       <main className="flex-1 flex flex-col overflow-hidden bg-white">
-        <div className="flex-1 flex flex-col p-6 overflow-hidden bg-white">{children}</div>
+        <div className="flex-1 flex flex-col p-6 overflow-y-auto bg-white">{children}</div>
       </main>
     </div>
   );

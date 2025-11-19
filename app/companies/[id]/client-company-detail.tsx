@@ -7,6 +7,9 @@ import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
 import ContactCreateForm from "@/components/contacts/contact-create-form";
+import SalesOpportunityCreateForm from "@/components/sales-opportunities/sales-opportunity-create-form";
+import ProjectCreateForm from "@/components/projects/project-create-form";
+import HistoryTab from "@/components/common/history-tab";
 
 interface Company {
   id: string;
@@ -43,7 +46,10 @@ export default function ClientCompanyDetail({
   const router = useRouter();
   const [company, setCompany] = useState(initialCompany);
   const [isSaving, setIsSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState<"overview" | "history">("overview");
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isSalesOpportunityModalOpen, setIsSalesOpportunityModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
 
   const updateCompany = async (field: string, value: any) => {
     if (!canEdit) return;
@@ -65,7 +71,7 @@ export default function ClientCompanyDetail({
       }
 
       const updatedCompany = await response.json();
-      // 既存の関連データを保持
+      // 既存の関連データを保持して即座に更新（router.refreshは不要）
       setCompany({
         ...updatedCompany,
         contacts: company.contacts,
@@ -74,7 +80,6 @@ export default function ClientCompanyDetail({
         projects: company.projects,
         _count: company._count,
       });
-      router.refresh();
     } catch (error) {
       console.error("更新エラー:", error);
       alert("更新に失敗しました");
@@ -88,24 +93,53 @@ export default function ClientCompanyDetail({
     await updateCompany(field, value);
   };
 
-  const handleContactCreateSuccess = async (id: string) => {
+  const handleContactCreateSuccess = (contact: any) => {
     setIsContactModalOpen(false);
-    // 取引先の最新データを取得して状態を更新
-    try {
-      const response = await fetch(`/api/companies/${company.id}`);
-      if (response.ok) {
-        const updatedCompany = await response.json();
-        setCompany(updatedCompany);
-      }
-    } catch (error) {
-      console.error("取引先データ取得エラー:", error);
-      // エラーが発生しても画面を更新（router.refreshでサーバー側のデータを取得）
-      router.refresh();
-    }
+    // 作成した連絡先を即座にローカル状態に追加（API呼び出し不要）
+    setCompany((prev) => ({
+      ...prev,
+      contacts: [contact, ...prev.contacts],
+      _count: {
+        ...prev._count,
+        contacts: (prev._count?.contacts ?? prev.contacts.length) + 1,
+      },
+    }));
   };
 
   const handleContactCreateCancel = () => {
     setIsContactModalOpen(false);
+  };
+
+  const handleSalesOpportunityCreateSuccess = (salesOpportunity: any) => {
+    setIsSalesOpportunityModalOpen(false);
+    // 作成した営業案件を即座にローカル状態に追加（API呼び出し不要）
+    // _count.quotesを0として設定（新規作成なので見積は0件）
+    setCompany((prev) => ({
+      ...prev,
+      salesOpportunities: [
+        { ...salesOpportunity, _count: { quotes: 0 } },
+        ...prev.salesOpportunities,
+      ],
+      _count: {
+        ...prev._count,
+        salesOpportunities: (prev._count?.salesOpportunities ?? prev.salesOpportunities.length) + 1,
+      },
+    }));
+  };
+
+  const handleSalesOpportunityCreateCancel = () => {
+    setIsSalesOpportunityModalOpen(false);
+  };
+
+  const handleProjectCreateSuccess = (projectId: string) => {
+    setIsProjectModalOpen(false);
+    // 作成したプロジェクトの詳細画面に遷移
+    router.push(`/projects/${projectId}`);
+    router.refresh();
+  };
+
+  const handleProjectCreateCancel = () => {
+    setIsProjectModalOpen(false);
   };
 
   return (
@@ -137,16 +171,32 @@ export default function ClientCompanyDetail({
       {/* タブ */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
-          <button className="border-blue-500 text-blue-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "overview"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
             概要
           </button>
-          <button className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "history"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
             履歴
           </button>
         </nav>
       </div>
 
-      {/* 基本情報 */}
+      {activeTab === "overview" ? (
+        <>
+          {/* 基本情報 */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
           基本情報
@@ -342,12 +392,13 @@ export default function ClientCompanyDetail({
               関連営業案件 ({company._count?.salesOpportunities ?? company.salesOpportunities.length})
             </h2>
             {canEdit && (
-              <Link
-                href={`/sales-opportunities/new?companyId=${company.id}`}
+              <button
+                type="button"
+                onClick={() => setIsSalesOpportunityModalOpen(true)}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
                 + 追加
-              </Link>
+              </button>
             )}
           </div>
           {company.salesOpportunities.length === 0 ? (
@@ -397,6 +448,14 @@ export default function ClientCompanyDetail({
             <h2 className="text-lg font-semibold text-gray-900">
               関連プロジェクト ({company._count?.projects ?? company.projects.length})
             </h2>
+            {canEdit && (
+              <button
+                onClick={() => setIsProjectModalOpen(true)}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
+                + 追加
+              </button>
+            )}
           </div>
           {company.projects.length === 0 ? (
             <p className="text-sm text-gray-500">
@@ -418,6 +477,8 @@ export default function ClientCompanyDetail({
                           ? "bg-blue-100 text-blue-800"
                           : project.status === "COMPLETED"
                           ? "bg-green-100 text-green-800"
+                          : project.status === "ON_HOLD"
+                          ? "bg-yellow-100 text-yellow-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
@@ -427,6 +488,8 @@ export default function ClientCompanyDetail({
                         ? "完了"
                         : project.status === "PLANNING"
                         ? "計画中"
+                        : project.status === "ON_HOLD"
+                        ? "保留"
                         : project.status}
                     </span>
                     {project.assignedUser && (
@@ -481,6 +544,10 @@ export default function ClientCompanyDetail({
           )}
         </div>
       </div>
+        </>
+      ) : (
+        <HistoryTab entityType="Company" entityId={company.id} />
+      )}
 
       {/* 連絡先新規作成モーダル */}
       {isContactModalOpen && (
@@ -489,6 +556,26 @@ export default function ClientCompanyDetail({
           companyId={company.id}
           onClose={handleContactCreateCancel}
           onSuccess={handleContactCreateSuccess}
+        />
+      )}
+
+      {/* 営業案件新規作成モーダル */}
+      {isSalesOpportunityModalOpen && (
+        <SalesOpportunityCreateModal
+          title="営業案件を新規作成"
+          companyId={company.id}
+          onClose={handleSalesOpportunityCreateCancel}
+          onSuccess={handleSalesOpportunityCreateSuccess}
+        />
+      )}
+
+      {/* プロジェクト新規作成モーダル */}
+      {isProjectModalOpen && (
+        <ProjectCreateModal
+          title="プロジェクトを新規作成"
+          companyId={company.id}
+          onClose={handleProjectCreateCancel}
+          onSuccess={handleProjectCreateSuccess}
         />
       )}
     </div>
@@ -502,7 +589,7 @@ interface ContactCreateModalProps {
   title: string;
   companyId: string;
   onClose: () => void;
-  onSuccess: (id: string) => void;
+  onSuccess: (contact: any) => void;
 }
 
 function ContactCreateModal({
@@ -581,7 +668,7 @@ function ContactCreateModal({
  */
 interface ContactCreateFormWithCompanyIdProps {
   companyId: string;
-  onSuccess: (id: string) => void;
+  onSuccess: (contact: any) => void;
   onCancel: () => void;
 }
 
@@ -593,6 +680,218 @@ function ContactCreateFormWithCompanyId({
   return (
     <ContactCreateForm
       onSuccess={onSuccess}
+      onCancel={onCancel}
+      defaultCompanyId={companyId}
+    />
+  );
+}
+
+/**
+ * 営業案件新規作成モーダルコンポーネント
+ */
+interface SalesOpportunityCreateModalProps {
+  title: string;
+  companyId: string;
+  onClose: () => void;
+  onSuccess: (salesOpportunity: any) => void;
+}
+
+function SalesOpportunityCreateModal({
+  title,
+  companyId,
+  onClose,
+  onSuccess,
+}: SalesOpportunityCreateModalProps) {
+  // ESCキーでモーダルを閉じる
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* オーバーレイ */}
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+      />
+
+      {/* モーダル */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* ヘッダー */}
+          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            >
+              <span className="sr-only">閉じる</span>
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* コンテンツ */}
+          <div className="px-6 py-4">
+            <SalesOpportunityCreateFormWithCompanyId
+              companyId={companyId}
+              onSuccess={onSuccess}
+              onCancel={onClose}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 取引先IDが事前に設定された営業案件作成フォーム
+ */
+interface SalesOpportunityCreateFormWithCompanyIdProps {
+  companyId: string;
+  onSuccess: (salesOpportunity: any) => void;
+  onCancel: () => void;
+}
+
+function SalesOpportunityCreateFormWithCompanyId({
+  companyId,
+  onSuccess,
+  onCancel,
+}: SalesOpportunityCreateFormWithCompanyIdProps) {
+  return (
+    <SalesOpportunityCreateForm
+      onSuccess={onSuccess}
+      onCancel={onCancel}
+      defaultCompanyId={companyId}
+    />
+  );
+}
+
+/**
+ * プロジェクト新規作成モーダルコンポーネント
+ */
+interface ProjectCreateModalProps {
+  title: string;
+  companyId: string;
+  onClose: () => void;
+  onSuccess: (projectId: string) => void;
+}
+
+function ProjectCreateModal({
+  title,
+  companyId,
+  onClose,
+  onSuccess,
+}: ProjectCreateModalProps) {
+  // ESCキーでモーダルを閉じる
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      {/* オーバーレイ */}
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+      />
+
+      {/* モーダル */}
+      <div className="flex min-h-full items-center justify-center p-4">
+        <div
+          className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* ヘッダー */}
+          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            >
+              <span className="sr-only">閉じる</span>
+              <svg
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* コンテンツ */}
+          <div className="px-6 py-4">
+            <ProjectCreateFormWithCompanyId
+              companyId={companyId}
+              onSuccess={onSuccess}
+              onCancel={onClose}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 取引先IDが事前に設定されたプロジェクト作成フォーム
+ */
+interface ProjectCreateFormWithCompanyIdProps {
+  companyId: string;
+  onSuccess: (projectId: string) => void;
+  onCancel: () => void;
+}
+
+function ProjectCreateFormWithCompanyId({
+  companyId,
+  onSuccess,
+  onCancel,
+}: ProjectCreateFormWithCompanyIdProps) {
+  const handleSuccess = (projectId: string) => {
+    onSuccess(projectId);
+  };
+
+  return (
+    <ProjectCreateForm
+      onSuccess={handleSuccess}
       onCancel={onCancel}
       defaultCompanyId={companyId}
     />

@@ -58,7 +58,7 @@ export default function ClientContactDetail({
 
       const updated = await response.json();
       setContact(updated);
-      router.refresh();
+      // router.refresh()は不要（APIレスポンスで既に最新データを取得している）
     } catch (error) {
       console.error("更新エラー:", error);
       alert("更新に失敗しました");

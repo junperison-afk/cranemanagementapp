@@ -25,6 +25,7 @@ type ProjectFormData = z.infer<typeof projectFormSchema>;
 interface ProjectCreateFormProps {
   onSuccess: (id: string) => void;
   onCancel: () => void;
+  defaultCompanyId?: string; // 初期値として設定する取引先ID
 }
 
 interface Company {
@@ -44,6 +45,7 @@ interface User {
 export default function ProjectCreateForm({
   onSuccess,
   onCancel,
+  defaultCompanyId,
 }: ProjectCreateFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +60,16 @@ export default function ProjectCreateForm({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
       status: "PLANNING",
+      companyId: defaultCompanyId || "",
     },
   });
+
+  // defaultCompanyIdが設定されている場合、初期値を設定
+  useEffect(() => {
+    if (defaultCompanyId) {
+      setValue("companyId", defaultCompanyId, { shouldValidate: true });
+    }
+  }, [defaultCompanyId, setValue]);
 
   const selectedCompanyId = watch("companyId");
 

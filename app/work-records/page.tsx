@@ -10,6 +10,9 @@ import WorkRecordTable from "@/components/work-records/work-record-table";
 import CreateButton from "@/components/common/create-button";
 import WorkRecordCreateForm from "@/components/work-records/work-record-create-form";
 
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
 export default async function WorkRecordsPage({
   searchParams,
 }: {

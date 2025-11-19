@@ -10,6 +10,9 @@ import SalesOpportunityTable from "@/components/sales-opportunities/sales-opport
 import CreateButton from "@/components/common/create-button";
 import SalesOpportunityCreateForm from "@/components/sales-opportunities/sales-opportunity-create-form";
 
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
 export default async function SalesOpportunitiesPage({
   searchParams,
 }: {

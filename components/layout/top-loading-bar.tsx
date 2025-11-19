@@ -12,6 +12,33 @@ export default function TopLoadingBar() {
   const previousPathnameRef = useRef<string>(pathname);
   const isLoadingRef = useRef<boolean>(false);
 
+  // ローディングを開始する関数
+  const startLoading = () => {
+    // 既にローディング中の場合はリセット
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    isLoadingRef.current = true;
+    setIsLoading(true);
+    setProgress(0);
+
+    // アニメーションを開始（左から右へ）
+    intervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 70) {
+          return 70; // 70%で一旦停止（実際のロード完了を待つ）
+        }
+        // 徐々に進行（最初は速く、後半は遅く）
+        const increment = prev < 50 ? 15 : prev < 65 ? 8 : 3;
+        return Math.min(prev + increment, 70);
+      });
+    }, 100);
+  };
+
   // リンククリックを検知してローディングを開始
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
@@ -23,38 +50,24 @@ export default function TopLoadingBar() {
         // 外部リンクやアンカーリンクは除外
         const href = link.getAttribute("href");
         if (href && !href.startsWith("http") && !href.startsWith("#")) {
-          // 既にローディング中の場合はリセット
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
-          }
-          if (timerRef.current) {
-            clearTimeout(timerRef.current);
-          }
-
-          isLoadingRef.current = true;
-          setIsLoading(true);
-          setProgress(0);
-
-          // アニメーションを開始（左から右へ）
-          intervalRef.current = setInterval(() => {
-            setProgress((prev) => {
-              if (prev >= 70) {
-                return 70; // 70%で一旦停止（実際のロード完了を待つ）
-              }
-              // 徐々に進行（最初は速く、後半は遅く）
-              const increment = prev < 50 ? 15 : prev < 65 ? 8 : 3;
-              return Math.min(prev + increment, 70);
-            });
-          }, 100);
+          startLoading();
         }
       }
     };
 
+    // カスタムイベント（プログラム的な遷移）をリッスン
+    const handleNavigationStart = () => {
+      startLoading();
+    };
+
     // リンククリックイベントをリッスン
     document.addEventListener("click", handleLinkClick, true);
+    // カスタムイベントをリッスン
+    window.addEventListener("navigation:start", handleNavigationStart);
 
     return () => {
       document.removeEventListener("click", handleLinkClick, true);
+      window.removeEventListener("navigation:start", handleNavigationStart);
     };
   }, []);
 

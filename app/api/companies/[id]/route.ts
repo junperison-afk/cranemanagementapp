@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { createAuditLog } from "@/lib/audit-log";
 
 const companySchema = z.object({
   name: z.string().min(1, "会社名は必須です").optional(),
@@ -104,6 +105,39 @@ export async function PUT(
     const body = await request.json();
     const validatedData = companySchema.parse(body);
 
+    // 既存データを取得（変更前の値を記録するため）
+    const existingCompany = await prisma.company.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!existingCompany) {
+      return NextResponse.json(
+        { error: "取引先が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    // 変更されたフィールドを特定
+    const changes: Array<{
+      field: string;
+      oldValue?: any;
+      newValue?: any;
+    }> = [];
+
+    Object.keys(validatedData).forEach((key) => {
+      const typedKey = key as keyof typeof validatedData;
+      const oldValue = existingCompany[typedKey];
+      const newValue = validatedData[typedKey];
+
+      if (oldValue !== newValue) {
+        changes.push({
+          field: typedKey,
+          oldValue,
+          newValue,
+        });
+      }
+    });
+
     const company = await prisma.company.update({
       where: { id: params.id },
       data: {
@@ -111,6 +145,23 @@ export async function PUT(
         email: validatedData.email || undefined,
       },
     });
+
+    // 変更履歴を記録
+    if (changes.length > 0) {
+      if (changes.length === 1) {
+        // 単一フィールドの変更
+        await createAuditLog("Company", params.id, "UPDATE", {
+          field: changes[0].field,
+          oldValue: changes[0].oldValue,
+          newValue: changes[0].newValue,
+        });
+      } else {
+        // 複数フィールドの変更
+        await createAuditLog("Company", params.id, "UPDATE", {
+          multipleChanges: changes,
+        });
+      }
+    }
 
     return NextResponse.json(company);
   } catch (error) {
@@ -146,6 +197,11 @@ export async function DELETE(
         { status: 403 }
       );
     }
+
+    // 削除前に履歴を記録
+    await createAuditLog("Company", params.id, "DELETE", {
+      newValue: { deleted: true },
+    });
 
     await prisma.company.delete({
       where: { id: params.id },

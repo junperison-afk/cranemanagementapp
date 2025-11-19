@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { createAuditLog } from "@/lib/audit-log";
 
 const projectUpdateSchema = z.object({
   companyId: z.string().min(1).optional(),
@@ -106,6 +107,18 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = projectUpdateSchema.parse(body);
 
+    // 既存データを取得（変更前の値を記録するため）
+    const existingProject = await prisma.project.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!existingProject) {
+      return NextResponse.json(
+        { error: "プロジェクトが見つかりません" },
+        { status: 404 }
+      );
+    }
+
     const updateData: any = {};
     if (validatedData.companyId !== undefined)
       updateData.companyId = validatedData.companyId;
@@ -131,6 +144,26 @@ export async function PATCH(
         : null;
     if (validatedData.notes !== undefined)
       updateData.notes = validatedData.notes;
+
+    // 変更されたフィールドを特定
+    const changes: Array<{
+      field: string;
+      oldValue?: any;
+      newValue?: any;
+    }> = [];
+
+    Object.keys(updateData).forEach((key) => {
+      const oldValue = existingProject[key as keyof typeof existingProject];
+      const newValue = updateData[key];
+
+      if (oldValue !== newValue) {
+        changes.push({
+          field: key,
+          oldValue,
+          newValue,
+        });
+      }
+    });
 
     const project = await prisma.project.update({
       where: { id: params.id },
@@ -174,6 +207,21 @@ export async function PATCH(
       },
     });
 
+    // 変更履歴を記録
+    if (changes.length > 0) {
+      if (changes.length === 1) {
+        await createAuditLog("Project", params.id, "UPDATE", {
+          field: changes[0].field,
+          oldValue: changes[0].oldValue,
+          newValue: changes[0].newValue,
+        });
+      } else {
+        await createAuditLog("Project", params.id, "UPDATE", {
+          multipleChanges: changes,
+        });
+      }
+    }
+
     return NextResponse.json(project);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -208,6 +256,11 @@ export async function DELETE(
         { status: 403 }
       );
     }
+
+    // 削除前に履歴を記録
+    await createAuditLog("Project", params.id, "DELETE", {
+      newValue: { deleted: true },
+    });
 
     await prisma.project.delete({
       where: { id: params.id },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { createAuditLog } from "@/lib/audit-log";
 
 const contactUpdateSchema = z.object({
   companyId: z.string().min(1).optional(),
@@ -78,6 +79,18 @@ export async function PATCH(
     const body = await request.json();
     const validatedData = contactUpdateSchema.parse(body);
 
+    // 既存データを取得（変更前の値を記録するため）
+    const existingContact = await prisma.companyContact.findUnique({
+      where: { id: params.id },
+    });
+
+    if (!existingContact) {
+      return NextResponse.json(
+        { error: "連絡先が見つかりません" },
+        { status: 404 }
+      );
+    }
+
     const updateData: any = {};
     if (validatedData.companyId !== undefined)
       updateData.companyId = validatedData.companyId;
@@ -88,6 +101,26 @@ export async function PATCH(
     if (validatedData.email !== undefined)
       updateData.email = validatedData.email || null;
     if (validatedData.notes !== undefined) updateData.notes = validatedData.notes;
+
+    // 変更されたフィールドを特定
+    const changes: Array<{
+      field: string;
+      oldValue?: any;
+      newValue?: any;
+    }> = [];
+
+    Object.keys(updateData).forEach((key) => {
+      const oldValue = existingContact[key as keyof typeof existingContact];
+      const newValue = updateData[key];
+
+      if (oldValue !== newValue) {
+        changes.push({
+          field: key,
+          oldValue,
+          newValue,
+        });
+      }
+    });
 
     const contact = await prisma.companyContact.update({
       where: { id: params.id },
@@ -105,6 +138,21 @@ export async function PATCH(
         },
       },
     });
+
+    // 変更履歴を記録
+    if (changes.length > 0) {
+      if (changes.length === 1) {
+        await createAuditLog("Contact", params.id, "UPDATE", {
+          field: changes[0].field,
+          oldValue: changes[0].oldValue,
+          newValue: changes[0].newValue,
+        });
+      } else {
+        await createAuditLog("Contact", params.id, "UPDATE", {
+          multipleChanges: changes,
+        });
+      }
+    }
 
     return NextResponse.json(contact);
   } catch (error) {
@@ -140,6 +188,11 @@ export async function DELETE(
         { status: 403 }
       );
     }
+
+    // 削除前に履歴を記録
+    await createAuditLog("Contact", params.id, "DELETE", {
+      newValue: { deleted: true },
+    });
 
     await prisma.companyContact.delete({
       where: { id: params.id },
