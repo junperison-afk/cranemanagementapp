@@ -74,7 +74,7 @@ export default function LookupField({
         // 追加のフィルターパラメータを追加
         const filterParamsObj = JSON.parse(filterParamsString);
         Object.entries(filterParamsObj).forEach(([key, val]) => {
-          if (val) {
+          if (val && typeof val === "string") {
             params.set(key, val);
           }
         });
@@ -122,7 +122,7 @@ export default function LookupField({
           // filterParamsも考慮して検索
           const filterParamsObj = JSON.parse(filterParamsString || "{}");
           Object.entries(filterParamsObj).forEach(([key, val]) => {
-            if (val) {
+            if (val && typeof val === "string") {
               params.set(key, val);
             }
           });

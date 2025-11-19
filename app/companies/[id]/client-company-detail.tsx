@@ -102,10 +102,17 @@ export default function ClientCompanyDetail({
     setCompany((prev) => ({
       ...prev,
       contacts: [contact, ...prev.contacts],
-      _count: {
-        ...prev._count,
-        contacts: (prev._count?.contacts ?? prev.contacts.length) + 1,
-      },
+      _count: prev._count
+        ? {
+            ...prev._count,
+            contacts: prev._count.contacts + 1,
+          }
+        : {
+            contacts: prev.contacts.length + 1,
+            salesOpportunities: prev.salesOpportunities.length,
+            equipment: prev.equipment.length,
+            projects: prev.projects.length,
+          },
     }));
   };
 
@@ -123,10 +130,17 @@ export default function ClientCompanyDetail({
         { ...salesOpportunity, _count: { quotes: 0 } },
         ...prev.salesOpportunities,
       ],
-      _count: {
-        ...prev._count,
-        salesOpportunities: (prev._count?.salesOpportunities ?? prev.salesOpportunities.length) + 1,
-      },
+      _count: prev._count
+        ? {
+            ...prev._count,
+            salesOpportunities: prev._count.salesOpportunities + 1,
+          }
+        : {
+            contacts: prev.contacts.length,
+            salesOpportunities: prev.salesOpportunities.length + 1,
+            equipment: prev.equipment.length,
+            projects: prev.projects.length,
+          },
     }));
   };
 

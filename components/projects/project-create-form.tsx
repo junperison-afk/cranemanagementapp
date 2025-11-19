@@ -75,7 +75,7 @@ export default function ProjectCreateForm({
 
   // filterParamsをメモ化して参照の変更を防ぐ
   const contactFilterParams = useMemo(
-    () => (selectedCompanyId ? { companyId: selectedCompanyId } : {}),
+    () => (selectedCompanyId ? { companyId: selectedCompanyId } : undefined),
     [selectedCompanyId]
   );
 
