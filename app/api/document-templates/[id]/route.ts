@@ -37,8 +37,8 @@ export async function GET(
       );
     }
 
-    // バイナリデータを返す
-    return new NextResponse(template.fileData, {
+    // バイナリデータを返す（BufferをUint8Arrayに変換）
+    return new NextResponse(new Uint8Array(template.fileData), {
       headers: {
         "Content-Type": template.mimeType,
         "Content-Disposition": `attachment; filename="${template.name}"`,
