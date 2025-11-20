@@ -25,6 +25,7 @@ model User {
   inspectionRecords InspectionRecord[]
   projects         Project[]
   auditLogs        AuditLog[]
+  documentTemplates DocumentTemplate[]
 
   @@map("users")
 }
@@ -110,7 +111,7 @@ model SalesQuote {
   id                  String        @id @default(cuid())
   salesOpportunityId  String
   quoteNumber         String        @unique // 見積番号（Q-YYYYMM-XXXX形式）
-  amount              Decimal       @db.Decimal(10, 2) // 金額
+  amount              Decimal       @db.Decimal(10, 2) // 金額（明細の合計金額）
   conditions          String?       // 条件
   status              QuoteStatus   @default(DRAFT) // ステータス
   validUntil          DateTime?     // 有効期限
@@ -121,7 +122,8 @@ model SalesQuote {
   // リレーション
   salesOpportunity SalesOpportunity @relation(fields: [salesOpportunityId], references: [id], onDelete: Cascade)
   contracts        Contract[]
-
+  items            SalesQuoteItem[]  // 見積明細
+  
   @@map("sales_quotes")
 }
 
@@ -130,6 +132,27 @@ enum QuoteStatus {
   SENT       // 送信済み
   ACCEPTED   // 承認済み
   REJECTED   // 却下
+}
+
+// 見積明細
+model SalesQuoteItem {
+  id              String        @id @default(cuid())
+  salesQuoteId    String
+  itemNumber      Int           // 明細番号（表示順序）
+  description     String        // 明細内容・項目名
+  quantity        Decimal?      @db.Decimal(10, 2) // 数量
+  unitPrice       Decimal?      @db.Decimal(10, 2) // 単価
+  amount          Decimal       @db.Decimal(10, 2) // 金額（明細の小計）
+  notes           String?       // 備考
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // リレーション
+  salesQuote      SalesQuote    @relation(fields: [salesQuoteId], references: [id], onDelete: Cascade)
+
+  @@map("sales_quote_items")
+  @@unique([salesQuoteId, itemNumber])
+  @@index([salesQuoteId, itemNumber])
 }
 
 // 受注書（契約）
@@ -267,5 +290,34 @@ enum AuditAction {
   CREATE  // 作成
   UPDATE  // 更新
   DELETE  // 削除
+}
+
+// 帳票テンプレート
+model DocumentTemplate {
+  id              String              @id @default(cuid())
+  userId          String?             // ユーザーID（nullの場合は全ユーザー共通のデフォルトテンプレート）
+  templateType    TemplateType        // テンプレートタイプ（見積書、契約書、報告書など）
+  name            String              // テンプレート名（例: "見積書テンプレート2024"）
+  description     String?             // 説明
+  fileData        Bytes               // バイナリデータ（.docxファイル）
+  fileSize        Int                 // ファイルサイズ（バイト）
+  mimeType        String              @default("application/vnd.openxmlformats-officedocument.wordprocessingml.document") // MIMEタイプ
+  isActive        Boolean             @default(true) // アクティブフラグ
+  isDefault       Boolean             @default(false) // デフォルトテンプレートフラグ
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // リレーション
+  user            User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, templateType, isActive])
+  @@index([templateType, isDefault, isActive])
+  @@map("document_templates")
+}
+
+enum TemplateType {
+  QUOTE         // 見積書
+  CONTRACT      // 契約書
+  REPORT        // 報告書
 }
 

@@ -27,6 +27,13 @@ export default async function SalesOpportunityDetailContent({
         orderBy: {
           createdAt: "desc",
         },
+        include: {
+          items: {
+            orderBy: {
+              itemNumber: "asc",
+            },
+          },
+        },
       },
       contract: true,
       project: {
@@ -61,6 +68,12 @@ export default async function SalesOpportunityDetailContent({
     quotes: salesOpportunity.quotes.map((quote) => ({
       ...quote,
       amount: quote.amount.toNumber(),
+      items: quote.items.map((item) => ({
+        ...item,
+        quantity: item.quantity?.toNumber() ?? null,
+        unitPrice: item.unitPrice?.toNumber() ?? null,
+        amount: item.amount.toNumber(),
+      })),
     })),
   };
 

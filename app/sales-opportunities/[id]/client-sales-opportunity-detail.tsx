@@ -3,13 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
 import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
 import InlineEditLookup from "@/components/companies/inline-edit-lookup";
 import CompanyCreateForm from "@/components/companies/company-create-form";
+import QuoteCreateModal from "@/components/sales-opportunities/quote-create-modal";
+import QuoteDetailModal from "@/components/sales-opportunities/quote-detail-modal";
 
 interface SalesOpportunity {
   id: string;
@@ -79,6 +81,8 @@ export default function ClientSalesOpportunityDetail({
   const [salesOpportunity, setSalesOpportunity] =
     useState(initialSalesOpportunity);
   const [isSaving, setIsSaving] = useState(false);
+  const [isQuoteCreateModalOpen, setIsQuoteCreateModalOpen] = useState(false);
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
 
   const updateSalesOpportunity = async (field: string, value: any) => {
     if (!canEdit) return;
@@ -273,12 +277,12 @@ export default function ClientSalesOpportunityDetail({
               見積 ({salesOpportunity._count.quotes})
             </h2>
             {canEdit && (
-              <Link
-                href={`/sales-opportunities/${salesOpportunity.id}/quotes/new`}
+              <button
+                onClick={() => setIsQuoteCreateModalOpen(true)}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
                 + 追加
-              </Link>
+              </button>
             )}
           </div>
           {salesOpportunity.quotes.length === 0 ? (
@@ -290,13 +294,13 @@ export default function ClientSalesOpportunityDetail({
                   key={quote.id}
                   className="border-b border-gray-200 pb-2 last:border-0 last:pb-0"
                 >
-                  <Link
-                    href={`/sales-opportunities/${salesOpportunity.id}/quotes/${quote.id}`}
+                  <button
+                    onClick={() => setSelectedQuoteId(quote.id)}
                     className="text-sm text-blue-600 hover:text-blue-800"
                   >
                     {quote.quoteNumber} - ¥
                     {quote.amount.toLocaleString()}
-                  </Link>
+                  </button>
                 </div>
               ))}
             </div>
@@ -340,6 +344,64 @@ export default function ClientSalesOpportunityDetail({
           )}
         </div>
       </div>
+
+      {/* 見積作成モーダル */}
+      <QuoteCreateModal
+        isOpen={isQuoteCreateModalOpen}
+        onClose={() => setIsQuoteCreateModalOpen(false)}
+        salesOpportunityId={salesOpportunity.id}
+        onSuccess={async () => {
+          // 見積作成後、営業案件データを再取得して即座に反映
+          try {
+            const response = await fetch(
+              `/api/sales-opportunities/${salesOpportunity.id}`
+            );
+            if (response.ok) {
+              const updatedSalesOpportunity = await response.json();
+              setSalesOpportunity({
+                ...updatedSalesOpportunity,
+                // 既存の関連データを保持
+                contract: salesOpportunity.contract,
+                project: salesOpportunity.project,
+              });
+            }
+          } catch (error) {
+            console.error("データ再取得エラー:", error);
+            // エラー時はページをリフレッシュ
+            router.refresh();
+          }
+        }}
+      />
+
+      {/* 見積詳細モーダル */}
+      {selectedQuoteId && (
+        <QuoteDetailModal
+          isOpen={!!selectedQuoteId}
+          onClose={() => setSelectedQuoteId(null)}
+          salesOpportunityId={salesOpportunity.id}
+          quoteId={selectedQuoteId}
+          onSuccess={async () => {
+            // 見積更新後、営業案件データを再取得して即座に反映
+            try {
+              const response = await fetch(
+                `/api/sales-opportunities/${salesOpportunity.id}`
+              );
+              if (response.ok) {
+                const updatedSalesOpportunity = await response.json();
+                setSalesOpportunity({
+                  ...updatedSalesOpportunity,
+                  // 既存の関連データを保持
+                  contract: salesOpportunity.contract,
+                  project: salesOpportunity.project,
+                });
+              }
+            } catch (error) {
+              console.error("データ再取得エラー:", error);
+              router.refresh();
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テンプレートアップロード</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-top: 0;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #555;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+    .required {
+      color: #e74c3c;
+    }
+    button {
+      background-color: #3B63F6;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #2950d4;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .message {
+      margin-top: 20px;
+      padding: 12px;
+      border-radius: 4px;
+      display: none;
+    }
+    .message.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .message.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .file-info {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      font-size: 14px;
+      color: #666;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>テンプレートアップロード</h1>
+    <form id="uploadForm">
+      <div class="form-group">
+        <label for="file">
+          ファイル <span class="required">*</span>
+        </label>
+        <input type="file" id="file" name="file" accept=".docx,.xlsx" required>
+        <div class="file-info" id="fileInfo" style="display: none;"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="templateType">
+          テンプレートタイプ <span class="required">*</span>
+        </label>
+        <select id="templateType" name="templateType" required>
+          <option value="">選択してください</option>
+          <option value="QUOTE">見積書</option>
+          <option value="CONTRACT">契約書</option>
+          <option value="REPORT">報告書</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="name">
+          テンプレート名 <span class="required">*</span>
+        </label>
+        <input type="text" id="name" name="name" placeholder="例: 見積書テンプレート_標準版" required>
+      </div>
+
+      <div class="form-group">
+        <label for="description">説明（任意）</label>
+        <textarea id="description" name="description" placeholder="テンプレートの説明を入力してください"></textarea>
+      </div>
+
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="isDefault" name="isDefault" value="true">
+          <label for="isDefault" style="margin: 0;">デフォルトテンプレートとして設定</label>
+        </div>
+        <small style="color: #666; display: block; margin-top: 5px;">
+          チェックすると、すべてのユーザーが使用できるデフォルトテンプレートとして保存されます。
+        </small>
+      </div>
+
+      <button type="submit" id="submitButton">アップロード</button>
+
+      <div class="message" id="message"></div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const fileInput = document.getElementById('file');
+    const fileInfo = document.getElementById('fileInfo');
+    const submitButton = document.getElementById('submitButton');
+    const message = document.getElementById('message');
+
+    // ファイル選択時に情報を表示
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        fileInfo.style.display = 'block';
+        fileInfo.innerHTML = `
+          <strong>選択されたファイル:</strong> ${file.name}<br>
+          <strong>ファイルサイズ:</strong> ${fileSizeMB} MB<br>
+          <strong>ファイルタイプ:</strong> ${file.type || '不明'}
+        `;
+
+        // ファイル名から自動的にテンプレート名を設定
+        const nameInput = document.getElementById('name');
+        if (!nameInput.value && file.name) {
+          nameInput.value = file.name.replace(/\.[^/.]+$/, '');
+        }
+      } else {
+        fileInfo.style.display = 'none';
+      }
+    });
+
+    // フォーム送信
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const file = fileInput.files[0];
+      if (!file) {
+        showMessage('ファイルを選択してください', 'error');
+        return;
+      }
+
+      // ファイルサイズチェック（5MB）
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        showMessage('ファイルサイズが大きすぎます（最大5MB）', 'error');
+        return;
+      }
+
+      // ファイルタイプチェック
+      const allowedTypes = [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        showMessage('サポートされていないファイル形式です（.docxまたは.xlsxのみ）', 'error');
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'アップロード中...';
+      message.style.display = 'none';
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('templateType', document.getElementById('templateType').value);
+        formData.append('name', document.getElementById('name').value);
+        
+        const description = document.getElementById('description').value;
+        if (description) {
+          formData.append('description', description);
+        }
+        
+        const isDefault = document.getElementById('isDefault').checked;
+        formData.append('isDefault', isDefault ? 'true' : 'false');
+
+        const response = await fetch('/api/document-templates', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showMessage(`テンプレートのアップロードに成功しました！\nテンプレート名: ${result.template.name}`, 'success');
+          form.reset();
+          fileInfo.style.display = 'none';
+        } else {
+          showMessage(`アップロードに失敗しました: ${result.error}`, 'error');
+        }
+      } catch (error) {
+        console.error('アップロードエラー:', error);
+        showMessage(`エラーが発生しました: ${error.message}`, 'error');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'アップロード';
+      }
+    });
+
+    function showMessage(text, type) {
+      message.textContent = text;
+      message.className = `message ${type}`;
+      message.style.display = 'block';
+      
+      if (type === 'success') {
+        // 成功時は3秒後にメッセージを消す
+        setTimeout(() => {
+          message.style.display = 'none';
+        }, 5000);
+      }
+    }
+  </script>
+</body>
+</html>
+

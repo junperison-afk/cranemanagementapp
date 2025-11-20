@@ -43,6 +43,13 @@ export async function GET(
           orderBy: {
             createdAt: "desc",
           },
+          include: {
+            items: {
+              orderBy: {
+                itemNumber: "asc",
+              },
+            },
+          },
         },
         contract: true,
         project: {
@@ -67,7 +74,25 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(salesOpportunity);
+    // Decimal型をnumber型に変換
+    const salesOpportunityWithNumberAmount = {
+      ...salesOpportunity,
+      estimatedAmount: salesOpportunity.estimatedAmount
+        ? salesOpportunity.estimatedAmount.toNumber()
+        : null,
+      quotes: salesOpportunity.quotes.map((quote) => ({
+        ...quote,
+        amount: quote.amount.toNumber(),
+        items: quote.items.map((item) => ({
+          ...item,
+          quantity: item.quantity?.toNumber() ?? null,
+          unitPrice: item.unitPrice?.toNumber() ?? null,
+          amount: item.amount.toNumber(),
+        })),
+      })),
+    };
+
+    return NextResponse.json(salesOpportunityWithNumberAmount);
   } catch (error) {
     console.error("営業案件詳細取得エラー:", error);
     return NextResponse.json(
