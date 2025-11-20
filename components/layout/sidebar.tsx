@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import {
   HomeIcon,
   BriefcaseIcon,
@@ -14,6 +14,7 @@ import {
   ClipboardDocumentCheckIcon,
   QuestionMarkCircleIcon,
   ArrowRightOnRectangleIcon,
+  UserCircleIcon,
 } from "@heroicons/react/24/outline";
 
 const menuItems = [
@@ -33,6 +34,7 @@ const bottomMenuItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   const isActive = (href: string) => {
     if (href === "/") {
@@ -49,6 +51,28 @@ export default function Sidebar() {
           クレーン管理システム
         </h1>
       </div>
+
+      {/* ユーザー情報 */}
+      {session?.user && (
+        <div className="px-6 py-3">
+          <Link
+            href="/account"
+            className="flex items-center gap-3 px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+          >
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+              <UserCircleIcon className="h-6 w-6 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {session.user.name || session.user.email}
+              </p>
+              <p className="text-xs text-gray-500 truncate">
+                {session.user.email}
+              </p>
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* メインメニュー */}
       <nav className="flex-1 space-y-1 px-3 py-4">

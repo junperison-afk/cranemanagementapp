@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import FilterPanelBase from "@/components/common/filter-panel-base";
 import DatePicker from "@/components/common/date-picker";
+import { useFilterPanel } from "@/hooks/use-filter-panel";
 
 interface FilterState {
   equipmentId?: string;
@@ -27,10 +28,10 @@ export function WorkRecordFilterPanel({
   isOpen,
   onClose,
 }: WorkRecordFiltersProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   // 初期値はsearchParamsから取得（初回マウント時に状態を事前に同期）
+  // コンポーネントは常にマウントされているため、useStateの初期化のみで十分
   const [filters, setFilters] = useState<FilterState>(() => ({
     equipmentId: searchParams.get("equipmentId") || "",
     userId: searchParams.get("userId") || "",
@@ -44,9 +45,9 @@ export function WorkRecordFilterPanel({
     updatedBefore: searchParams.get("updatedBefore") || "",
   }));
 
-  // searchParamsからフィルター状態を同期（isOpenに関係なく実行）
+  // searchParams変更時のみフィルター状態を同期（初回マウント時はuseStateの初期化で処理済み）
   useEffect(() => {
-    setFilters({
+    const newFilters: FilterState = {
       equipmentId: searchParams.get("equipmentId") || "",
       userId: searchParams.get("userId") || "",
       workType: searchParams.get("workType") || "",
@@ -57,6 +58,14 @@ export function WorkRecordFilterPanel({
       inspectionDateBefore: searchParams.get("inspectionDateBefore") || "",
       updatedAfter: searchParams.get("updatedAfter") || "",
       updatedBefore: searchParams.get("updatedBefore") || "",
+    };
+    
+    // 状態が実際に変更された場合のみ更新（不要な再レンダリングを避ける）
+    setFilters((prevFilters) => {
+      const hasChanged = Object.keys(newFilters).some(
+        (key) => prevFilters[key as keyof FilterState] !== newFilters[key as keyof FilterState]
+      );
+      return hasChanged ? newFilters : prevFilters;
     });
   }, [searchParams]);
   const [equipmentSearchQuery, setEquipmentSearchQuery] = useState("");
@@ -67,7 +76,32 @@ export function WorkRecordFilterPanel({
   const [userSearchResults, setUserSearchResults] = useState<Array<{ id: string; name: string | null; email: string }>>([]);
   const [selectedUser, setSelectedUser] = useState<{ id: string; name: string | null; email: string } | null>(null);
   const [showUserResults, setShowUserResults] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
+  // フィルターパネルの共通ロジック
+  const { applyFilters: applyFiltersBase, clearFilters: clearFiltersBase, isApplying } = useFilterPanel({
+    basePath: "/work-records",
+    onClearFilters: () => {
+      setFilters({
+        equipmentId: "",
+        userId: "",
+        workType: "",
+        overallJudgment: "",
+        findings: "",
+        resultSummary: "",
+        inspectionDateAfter: "",
+        inspectionDateBefore: "",
+        updatedAfter: "",
+        updatedBefore: "",
+      });
+      setEquipmentSearchQuery("");
+      setSelectedEquipment(null);
+      setEquipmentSearchResults([]);
+      setShowEquipmentResults(false);
+      setUserSearchQuery("");
+      setSelectedUser(null);
+      setUserSearchResults([]);
+      setShowUserResults(false);
+    },
+  });
 
   // 選択された機器の名前を初期化
   useEffect(() => {
@@ -160,58 +194,11 @@ export function WorkRecordFilterPanel({
   }, [userSearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
-    setIsApplying(true);
-    const params = new URLSearchParams();
-
-    // フィルターパネルを開いたままにする
-    params.set("filter", "open");
-
-    // 全体検索の値を追加
-    if (searchValue) {
-      params.set("search", searchValue);
-    }
-
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
-    });
-
-    // ページをリセット
-    params.delete("page");
-
-    router.push(`/work-records?${params.toString()}`);
-    setTimeout(() => {
-      setIsApplying(false);
-    }, 500);
+    applyFiltersBase(searchValue, filters);
   };
 
   const clearFilters = () => {
-    setFilters({
-      equipmentId: "",
-      userId: "",
-      workType: "",
-      overallJudgment: "",
-      findings: "",
-      resultSummary: "",
-      inspectionDateAfter: "",
-      inspectionDateBefore: "",
-      updatedAfter: "",
-      updatedBefore: "",
-    });
-    setEquipmentSearchQuery("");
-    setSelectedEquipment(null);
-    setEquipmentSearchResults([]);
-    setShowEquipmentResults(false);
-    setUserSearchQuery("");
-    setSelectedUser(null);
-    setUserSearchResults([]);
-    setShowUserResults(false);
-    // すべてのフィルターをクリア（searchも含む）
-    // フィルターパネルを開いたままにする
-    const params = new URLSearchParams();
-    params.set("filter", "open");
-    router.push(`/work-records?${params.toString()}`);
+    clearFiltersBase();
   };
 
   // hasActiveFiltersはFilterPanelBaseで自動判定されるため、削除

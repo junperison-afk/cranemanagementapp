@@ -184,6 +184,7 @@ export default function WorkRecordTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/equipment/${record.equipment.id}`}
+                        prefetch={true}
                         className="text-sm text-blue-600 hover:text-blue-800"
                       >
                         {record.equipment.name}

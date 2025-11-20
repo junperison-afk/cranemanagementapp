@@ -27,14 +27,16 @@ export default function FilterPanelBase({
 }: FilterPanelBaseProps) {
   const searchParams = useSearchParams();
   // 初期値はsearchParamsから取得（初回マウント時に状態を事前に同期）
+  // コンポーネントは常にマウントされているため、useStateの初期化のみで十分
   const [searchValue, setSearchValue] = useState(() => 
     searchParams.get("search") || ""
   );
 
-  // searchParams変更時に検索値を同期
+  // searchParams変更時のみ検索値を同期（初回マウント時はuseStateの初期化で処理済み）
   useEffect(() => {
     const searchParam = searchParams.get("search") || "";
-    setSearchValue(searchParam);
+    // 状態が実際に変更された場合のみ更新（不要な再レンダリングを避ける）
+    setSearchValue((prevValue) => (prevValue !== searchParam ? searchParam : prevValue));
   }, [searchParams]);
 
   // アクティブなフィルターがあるかどうかを判定（searchパラメータも含む）

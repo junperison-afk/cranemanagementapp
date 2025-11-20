@@ -132,6 +132,7 @@ export default function CompanyTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/companies/${company.id}`}
+                        prefetch={true}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800"
                       >
                         {company.name}

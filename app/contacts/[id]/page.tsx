@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import ClientContactDetail from "./client-contact-detail";
+import ContactDetailContent from "./contact-detail-content";
+import DetailSkeleton from "@/components/common/detail-skeleton";
+
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
 
 export default async function ContactDetailPage({
   params,
@@ -15,44 +18,14 @@ export default async function ContactDetailPage({
     redirect("/login");
   }
 
-  const contact = await prisma.companyContact.findUnique({
-    where: { id: params.id },
-    include: {
-      company: {
-        select: {
-          id: true,
-          name: true,
-          postalCode: true,
-          address: true,
-          phone: true,
-          email: true,
-        },
-      },
-    },
-  });
-
-  if (!contact) {
-    return (
-      <MainLayout>
-        <div className="text-center py-12">
-          <p className="text-gray-500">連絡先が見つかりません</p>
-          <Link
-            href="/contacts"
-            className="mt-4 inline-block text-blue-600 hover:text-blue-800"
-          >
-            一覧に戻る
-          </Link>
-        </div>
-      </MainLayout>
-    );
-  }
-
   const canEdit =
     session.user.role === "ADMIN" || session.user.role === "EDITOR";
 
   return (
     <MainLayout>
-      <ClientContactDetail contact={contact} canEdit={canEdit} />
+      <Suspense fallback={<DetailSkeleton />}>
+        <ContactDetailContent id={params.id} canEdit={canEdit} />
+      </Suspense>
     </MainLayout>
   );
 }

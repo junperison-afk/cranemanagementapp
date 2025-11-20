@@ -166,6 +166,7 @@ export default function ProjectTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/projects/${project.id}`}
+                        prefetch={true}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800"
                       >
                         {project.title}
@@ -174,6 +175,7 @@ export default function ProjectTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/companies/${project.company.id}`}
+                        prefetch={true}
                         className="text-sm text-gray-900 hover:text-blue-600"
                       >
                         {project.company.name}

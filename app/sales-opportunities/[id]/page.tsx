@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
-import ClientSalesOpportunityDetail from "./client-sales-opportunity-detail";
+import SalesOpportunityDetailContent from "./sales-opportunity-detail-content";
+import DetailSkeleton from "@/components/common/detail-skeleton";
+
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
 
 export default async function SalesOpportunityDetailPage({
   params,
@@ -15,77 +18,14 @@ export default async function SalesOpportunityDetailPage({
     redirect("/login");
   }
 
-  const salesOpportunity = await prisma.salesOpportunity.findUnique({
-    where: { id: params.id },
-    include: {
-      company: {
-        select: {
-          id: true,
-          name: true,
-          postalCode: true,
-          address: true,
-          phone: true,
-          email: true,
-        },
-      },
-      quotes: {
-        orderBy: {
-          createdAt: "desc",
-        },
-      },
-      contract: true,
-      project: {
-        select: {
-          id: true,
-          title: true,
-          status: true,
-        },
-      },
-      _count: {
-        select: {
-          quotes: true,
-        },
-      },
-    },
-  });
-
-  if (!salesOpportunity) {
-    return (
-      <MainLayout>
-        <div className="text-center py-12">
-          <p className="text-gray-500">営業案件が見つかりません</p>
-          <Link
-            href="/sales-opportunities"
-            className="mt-4 inline-block text-blue-600 hover:text-blue-800"
-          >
-            一覧に戻る
-          </Link>
-        </div>
-      </MainLayout>
-    );
-  }
-
   const canEdit =
     session.user.role === "ADMIN" || session.user.role === "EDITOR";
 
-  // Decimal型をnumber型に変換
-  const salesOpportunityWithNumberAmount = {
-    ...salesOpportunity,
-    estimatedAmount: salesOpportunity.estimatedAmount
-      ? salesOpportunity.estimatedAmount.toNumber()
-      : null,
-    quotes: salesOpportunity.quotes.map((quote) => ({
-      ...quote,
-      amount: quote.amount.toNumber(),
-    })),
-  };
-
   return (
     <MainLayout>
-      <ClientSalesOpportunityDetail
-        salesOpportunity={salesOpportunityWithNumberAmount}
-        canEdit={canEdit}
-      />
+      <Suspense fallback={<DetailSkeleton />}>
+        <SalesOpportunityDetailContent id={params.id} canEdit={canEdit} />
+      </Suspense>
     </MainLayout>
   );
 }

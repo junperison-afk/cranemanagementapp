@@ -1,9 +1,12 @@
+import { Suspense } from "react";
 import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import MainLayout from "@/components/layout/main-layout";
-import { prisma } from "@/lib/prisma";
-import ClientCompanyDetail from "./client-company-detail";
+import CompanyDetailContent from "./company-detail-content";
+import DetailSkeleton from "@/components/common/detail-skeleton";
+
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
 
 export default async function CompanyDetailPage({
   params,
@@ -15,75 +18,14 @@ export default async function CompanyDetailPage({
     redirect("/login");
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: params.id },
-    include: {
-      contacts: {
-        orderBy: {
-          createdAt: "desc",
-        },
-      },
-      salesOpportunities: {
-        take: 10,
-        orderBy: {
-          updatedAt: "desc",
-        },
-        include: {
-          _count: {
-            select: {
-              quotes: true,
-            },
-          },
-        },
-      },
-      equipment: {
-        take: 10,
-        orderBy: {
-          updatedAt: "desc",
-        },
-      },
-      projects: {
-        take: 10,
-        orderBy: {
-          updatedAt: "desc",
-        },
-        include: {
-          assignedUser: true,
-        },
-      },
-      _count: {
-        select: {
-          contacts: true,
-          salesOpportunities: true,
-          equipment: true,
-          projects: true,
-        },
-      },
-    },
-  });
-
-  if (!company) {
-    return (
-      <MainLayout>
-        <div className="text-center py-12">
-          <p className="text-gray-500">取引先が見つかりません</p>
-          <Link
-            href="/companies"
-            className="mt-4 inline-block text-blue-600 hover:text-blue-800"
-          >
-            一覧に戻る
-          </Link>
-        </div>
-      </MainLayout>
-    );
-  }
-
   const canEdit =
     session.user.role === "ADMIN" || session.user.role === "EDITOR";
 
   return (
     <MainLayout>
-      <ClientCompanyDetail company={company} canEdit={canEdit} />
+      <Suspense fallback={<DetailSkeleton />}>
+        <CompanyDetailContent id={params.id} canEdit={canEdit} />
+      </Suspense>
     </MainLayout>
   );
 }

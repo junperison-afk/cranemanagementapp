@@ -152,6 +152,7 @@ export default function SalesOpportunityTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/sales-opportunities/${opportunity.id}`}
+                        prefetch={true}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800"
                       >
                         {opportunity.title}
@@ -160,6 +161,7 @@ export default function SalesOpportunityTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/companies/${opportunity.company.id}`}
+                        prefetch={true}
                         className="text-sm text-gray-900 hover:text-blue-600"
                       >
                         {opportunity.company.name}

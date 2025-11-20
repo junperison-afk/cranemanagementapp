@@ -137,6 +137,7 @@ export default function EquipmentTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/equipment/${item.id}`}
+                        prefetch={true}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800"
                       >
                         {item.name}
@@ -154,6 +155,7 @@ export default function EquipmentTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/companies/${item.company.id}`}
+                        prefetch={true}
                         className="text-sm text-gray-900 hover:text-blue-600"
                       >
                         {item.company.name}
@@ -163,6 +165,7 @@ export default function EquipmentTable({
                       {item.project ? (
                         <Link
                           href={`/projects/${item.project.id}`}
+                          prefetch={true}
                           className="text-blue-600 hover:text-blue-800"
                         >
                           {item.project.title}

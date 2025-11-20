@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -45,6 +45,11 @@ export default function ClientEquipmentDetail({
   equipment: initialEquipment,
   canEdit,
 }: ClientEquipmentDetailProps) {
+  // データが読み込まれたことを通知
+  useEffect(() => {
+    const event = new CustomEvent("page:content:loaded");
+    window.dispatchEvent(event);
+  }, [initialEquipment]);
   const router = useRouter();
   const { data: session } = useSession();
   const [equipment, setEquipment] = useState(initialEquipment);

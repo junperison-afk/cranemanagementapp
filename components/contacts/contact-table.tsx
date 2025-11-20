@@ -125,6 +125,7 @@ export default function ContactTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/contacts/${contact.id}`}
+                        prefetch={true}
                         className="text-sm font-medium text-blue-600 hover:text-blue-800"
                       >
                         {contact.name}
@@ -136,6 +137,7 @@ export default function ContactTable({
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/companies/${contact.company.id}`}
+                        prefetch={true}
                         className="text-sm text-blue-600 hover:text-blue-800"
                       >
                         {contact.company.name}

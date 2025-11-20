@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import FilterPanelBase from "@/components/common/filter-panel-base";
 import DatePicker from "@/components/common/date-picker";
+import { useFilterPanel } from "@/hooks/use-filter-panel";
 
 interface FilterState {
   position?: string;
@@ -20,10 +21,10 @@ interface ContactFiltersProps {
 }
 
 export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   // 初期値はsearchParamsから取得（初回マウント時に状態を事前に同期）
+  // コンポーネントは常にマウントされているため、useStateの初期化のみで十分
   const [filters, setFilters] = useState<FilterState>(() => ({
     position: searchParams.get("position") || "",
     companyId: searchParams.get("companyId") || "",
@@ -33,22 +34,48 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
     updatedBefore: searchParams.get("updatedBefore") || "",
   }));
 
-  // searchParamsからフィルター状態を同期（isOpenに関係なく実行）
+  // searchParams変更時のみフィルター状態を同期（初回マウント時はuseStateの初期化で処理済み）
   useEffect(() => {
-    setFilters({
+    const newFilters: FilterState = {
       position: searchParams.get("position") || "",
       companyId: searchParams.get("companyId") || "",
       phone: searchParams.get("phone") || "",
       email: searchParams.get("email") || "",
       updatedAfter: searchParams.get("updatedAfter") || "",
       updatedBefore: searchParams.get("updatedBefore") || "",
+    };
+    
+    // 状態が実際に変更された場合のみ更新（不要な再レンダリングを避ける）
+    setFilters((prevFilters) => {
+      const hasChanged = Object.keys(newFilters).some(
+        (key) => prevFilters[key as keyof FilterState] !== newFilters[key as keyof FilterState]
+      );
+      return hasChanged ? newFilters : prevFilters;
     });
   }, [searchParams]);
   const [companySearchQuery, setCompanySearchQuery] = useState("");
   const [companySearchResults, setCompanySearchResults] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string } | null>(null);
   const [showCompanyResults, setShowCompanyResults] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
+
+  // フィルターパネルの共通ロジック
+  const { applyFilters: applyFiltersBase, clearFilters: clearFiltersBase, isApplying } = useFilterPanel({
+    basePath: "/contacts",
+    onClearFilters: () => {
+      setFilters({
+        position: "",
+        companyId: "",
+        phone: "",
+        email: "",
+        updatedAfter: "",
+        updatedBefore: "",
+      });
+      setCompanySearchQuery("");
+      setSelectedCompany(null);
+      setCompanySearchResults([]);
+      setShowCompanyResults(false);
+    },
+  });
 
   // 選択された取引先の名前を初期化
   useEffect(() => {
@@ -96,50 +123,11 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
   }, [companySearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
-    setIsApplying(true);
-    const params = new URLSearchParams();
-    
-    // フィルターパネルを開いたままにする
-    params.set("filter", "open");
-    
-    // 全体検索の値を追加
-    if (searchValue) {
-      params.set("search", searchValue);
-    }
-    
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
-        params.set(key, value);
-      }
-    });
-
-    // ページをリセット
-    params.delete("page");
-    
-    router.push(`/contacts?${params.toString()}`);
-    setTimeout(() => {
-      setIsApplying(false);
-    }, 500);
+    applyFiltersBase(searchValue, filters);
   };
 
   const clearFilters = () => {
-    setFilters({
-      position: "",
-      companyId: "",
-      phone: "",
-      email: "",
-      updatedAfter: "",
-      updatedBefore: "",
-    });
-    setCompanySearchQuery("");
-    setSelectedCompany(null);
-    setCompanySearchResults([]);
-    setShowCompanyResults(false);
-    // すべてのフィルターをクリア（searchも含む）
-    // フィルターパネルを開いたままにする
-    const params = new URLSearchParams();
-    params.set("filter", "open");
-    router.push(`/contacts?${params.toString()}`);
+    clearFiltersBase();
   };
 
   // hasActiveFiltersはFilterPanelBaseで自動判定されるため、削除

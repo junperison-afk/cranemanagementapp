@@ -1,9 +1,13 @@
+import { Suspense } from "react";
 import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import ClientProjectDetail from "./client-project-detail";
+import ProjectDetailContent from "./project-detail-content";
+import DetailSkeleton from "@/components/common/detail-skeleton";
+
+// 常に最新のデータを取得するため、動的レンダリングを強制
+export const dynamic = 'force-dynamic';
 
 export default async function ProjectDetailPage({
   params,
@@ -15,75 +19,14 @@ export default async function ProjectDetailPage({
     redirect("/login");
   }
 
-  const project = await prisma.project.findUnique({
-    where: { id: params.id },
-    include: {
-      company: {
-        select: {
-          id: true,
-          name: true,
-          postalCode: true,
-          address: true,
-          phone: true,
-          email: true,
-        },
-      },
-      assignedUser: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-        },
-      },
-      salesOpportunity: {
-        select: {
-          id: true,
-          title: true,
-          status: true,
-        },
-      },
-      equipment: {
-        orderBy: {
-          updatedAt: "desc",
-        },
-      },
-      _count: {
-        select: {
-          equipment: true,
-        },
-      },
-    },
-  });
-
-  if (!project) {
-    return (
-      <MainLayout>
-        <div className="text-center py-12">
-          <p className="text-gray-500">プロジェクトが見つかりません</p>
-          <Link
-            href="/projects"
-            className="mt-4 inline-block text-blue-600 hover:text-blue-800"
-          >
-            一覧に戻る
-          </Link>
-        </div>
-      </MainLayout>
-    );
-  }
-
   const canEdit =
     session.user.role === "ADMIN" || session.user.role === "EDITOR";
 
-  // Decimal型をnumber型に変換
-  const projectWithNumberAmount = {
-    ...project,
-    amount: project.amount ? project.amount.toNumber() : null,
-  };
-
   return (
     <MainLayout>
-      <ClientProjectDetail project={projectWithNumberAmount} canEdit={canEdit} />
+      <Suspense fallback={<DetailSkeleton />}>
+        <ProjectDetailContent id={params.id} canEdit={canEdit} />
+      </Suspense>
     </MainLayout>
   );
 }

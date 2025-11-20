@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
@@ -69,6 +69,12 @@ export default function ClientSalesOpportunityDetail({
   canEdit,
 }: ClientSalesOpportunityDetailProps) {
   const router = useRouter();
+
+  // データが読み込まれたことを通知
+  useEffect(() => {
+    const event = new CustomEvent("page:content:loaded");
+    window.dispatchEvent(event);
+  }, [initialSalesOpportunity]);
   const { data: session } = useSession();
   const [salesOpportunity, setSalesOpportunity] =
     useState(initialSalesOpportunity);
