@@ -368,7 +368,8 @@ export async function POST(
     }
 
     // 生成されたファイルを返す
-    return new NextResponse(buffer, {
+    // BufferをUint8Arrayに変換してからNextResponseに渡す（型エラー回避のため）
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": contentType,
         "Content-Disposition": `attachment; filename="${encodeURIComponent(fileName)}"`,
