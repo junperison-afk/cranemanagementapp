@@ -311,13 +311,13 @@ export async function POST(
       const workbook = new ExcelJS.Workbook();
       
       // テンプレートをバッファから読み込み
-      // PrismaのBytes型をUint8ArrayまたはBufferに変換
-      const fileData = template.fileData instanceof Uint8Array
+      // PrismaのBytes型をUint8Arrayに変換（ExcelJSはUint8Arrayを受け入れる）
+      const fileData: Uint8Array = template.fileData instanceof Uint8Array
         ? template.fileData
         : Buffer.isBuffer(template.fileData)
-        ? template.fileData
+        ? new Uint8Array(template.fileData)
         : new Uint8Array(template.fileData);
-      await workbook.xlsx.load(fileData as Buffer | Uint8Array);
+      await workbook.xlsx.load(fileData);
 
       // すべてのワークシートを処理
       workbook.worksheets.forEach((worksheet) => {
