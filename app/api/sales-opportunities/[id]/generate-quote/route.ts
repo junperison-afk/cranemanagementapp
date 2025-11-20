@@ -312,14 +312,11 @@ export async function POST(
       
       // テンプレートをバッファから読み込み
       // PrismaのBytes型をBufferに変換（ExcelJSはBuffer型を期待）
-      // PrismaのBytes型はBufferとして扱われるため、Buffer.from()で変換
+      // PrismaのBytes型は実際にはBufferとして扱われるため、Buffer.from()で変換
+      // instanceofチェックは型エラーになるため、常にUint8Array経由で変換
       const fileBuffer = Buffer.isBuffer(template.fileData)
         ? template.fileData
-        : Buffer.from(
-            template.fileData instanceof ArrayBuffer
-              ? new Uint8Array(template.fileData)
-              : (template.fileData as Uint8Array | Buffer)
-          );
+        : Buffer.from(new Uint8Array(template.fileData));
       // ExcelJSのload()メソッドの型定義が厳密なため型アサーションを使用
       await workbook.xlsx.load(fileBuffer as any);
 
