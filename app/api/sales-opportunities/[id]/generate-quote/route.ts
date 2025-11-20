@@ -274,8 +274,9 @@ export async function POST(
 
     // Wordテンプレートを処理
     if (template.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-      // テンプレートをバッファから読み込み
-      const zip = new PizZip(template.fileData);
+      // テンプレートをバッファから読み込み（Bufferに明示的に変換）
+      const fileBuffer = Buffer.from(template.fileData);
+      const zip = new PizZip(fileBuffer);
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
@@ -306,8 +307,9 @@ export async function POST(
     else if (template.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
       const workbook = new ExcelJS.Workbook();
       
-      // テンプレートをバッファから読み込み
-      await workbook.xlsx.load(template.fileData);
+      // テンプレートをバッファから読み込み（Bufferに明示的に変換）
+      const fileBuffer = Buffer.from(template.fileData);
+      await workbook.xlsx.load(fileBuffer);
 
       // すべてのワークシートを処理
       workbook.worksheets.forEach((worksheet) => {
