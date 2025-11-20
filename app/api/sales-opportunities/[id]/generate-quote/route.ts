@@ -310,12 +310,14 @@ export async function POST(
     else if (template.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
       const workbook = new ExcelJS.Workbook();
       
-      // テンプレートをバッファから読み込み（Bufferに明示的に変換）
-      // PrismaのBytes型をBufferに変換
-      const fileBuffer: Buffer = Buffer.isBuffer(template.fileData) 
-        ? template.fileData 
-        : Buffer.from(new Uint8Array(template.fileData));
-      await workbook.xlsx.load(fileBuffer);
+      // テンプレートをバッファから読み込み
+      // PrismaのBytes型をUint8ArrayまたはBufferに変換
+      const fileData = template.fileData instanceof Uint8Array
+        ? template.fileData
+        : Buffer.isBuffer(template.fileData)
+        ? template.fileData
+        : new Uint8Array(template.fileData);
+      await workbook.xlsx.load(fileData as Buffer | Uint8Array);
 
       // すべてのワークシートを処理
       workbook.worksheets.forEach((worksheet) => {
