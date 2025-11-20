@@ -69,7 +69,15 @@ export function EquipmentFilterPanel({
   });
 
   const applyFilters = (searchValue: string) => {
-    applyFiltersBase(searchValue, filters);
+    // FilterStateをRecord<string, string>に変換（オプショナルプロパティを文字列に変換）
+    const filtersRecord: Record<string, string> = {
+      model: filters.model || "",
+      serialNumber: filters.serialNumber || "",
+      location: filters.location || "",
+      updatedAfter: filters.updatedAfter || "",
+      updatedBefore: filters.updatedBefore || "",
+    };
+    applyFiltersBase(searchValue, filtersRecord);
   };
 
   const clearFilters = () => {

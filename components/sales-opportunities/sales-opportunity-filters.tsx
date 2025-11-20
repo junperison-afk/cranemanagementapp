@@ -130,7 +130,17 @@ export function SalesOpportunityFilterPanel({
   }, [companySearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
-    applyFiltersBase(searchValue, filters);
+    // FilterStateをRecord<string, string>に変換（オプショナルプロパティを文字列に変換）
+    const filtersRecord: Record<string, string> = {
+      status: filters.status || "",
+      companyId: filters.companyId || "",
+      estimatedAmount: filters.estimatedAmount || "",
+      craneCount: filters.craneCount || "",
+      estimateCount: filters.estimateCount || "",
+      occurredAfter: filters.occurredAfter || "",
+      occurredBefore: filters.occurredBefore || "",
+    };
+    applyFiltersBase(searchValue, filtersRecord);
   };
 
   const clearFilters = () => {

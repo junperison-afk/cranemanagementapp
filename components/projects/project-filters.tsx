@@ -143,7 +143,21 @@ export function ProjectFilterPanel({ isOpen, onClose }: ProjectFiltersProps) {
   }, [companySearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
-    applyFiltersBase(searchValue, filters);
+    // FilterStateをRecord<string, string>に変換（オプショナルプロパティを文字列に変換）
+    const filtersRecord: Record<string, string> = {
+      status: filters.status || "",
+      companyId: filters.companyId || "",
+      assignedUserId: filters.assignedUserId || "",
+      amount: filters.amount || "",
+      equipmentCount: filters.equipmentCount || "",
+      startDateAfter: filters.startDateAfter || "",
+      startDateBefore: filters.startDateBefore || "",
+      endDateAfter: filters.endDateAfter || "",
+      endDateBefore: filters.endDateBefore || "",
+      updatedAfter: filters.updatedAfter || "",
+      updatedBefore: filters.updatedBefore || "",
+    };
+    applyFiltersBase(searchValue, filtersRecord);
   };
 
   const clearFilters = () => {

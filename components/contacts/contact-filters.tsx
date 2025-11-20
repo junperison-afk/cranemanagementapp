@@ -123,7 +123,16 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
   }, [companySearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
-    applyFiltersBase(searchValue, filters);
+    // FilterStateをRecord<string, string>に変換（オプショナルプロパティを文字列に変換）
+    const filtersRecord: Record<string, string> = {
+      position: filters.position || "",
+      companyId: filters.companyId || "",
+      phone: filters.phone || "",
+      email: filters.email || "",
+      updatedAfter: filters.updatedAfter || "",
+      updatedBefore: filters.updatedBefore || "",
+    };
+    applyFiltersBase(searchValue, filtersRecord);
   };
 
   const clearFilters = () => {

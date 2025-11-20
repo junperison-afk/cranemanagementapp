@@ -194,7 +194,20 @@ export function WorkRecordFilterPanel({
   }, [userSearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
-    applyFiltersBase(searchValue, filters);
+    // FilterStateをRecord<string, string>に変換（オプショナルプロパティを文字列に変換）
+    const filtersRecord: Record<string, string> = {
+      equipmentId: filters.equipmentId || "",
+      userId: filters.userId || "",
+      workType: filters.workType || "",
+      overallJudgment: filters.overallJudgment || "",
+      findings: filters.findings || "",
+      resultSummary: filters.resultSummary || "",
+      inspectionDateAfter: filters.inspectionDateAfter || "",
+      inspectionDateBefore: filters.inspectionDateBefore || "",
+      updatedAfter: filters.updatedAfter || "",
+      updatedBefore: filters.updatedBefore || "",
+    };
+    applyFiltersBase(searchValue, filtersRecord);
   };
 
   const clearFilters = () => {
