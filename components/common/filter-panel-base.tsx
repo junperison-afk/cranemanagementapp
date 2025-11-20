@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState, useMemo } from "react";
+import { ReactNode, useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
@@ -26,9 +26,16 @@ export default function FilterPanelBase({
   isApplying = false,
 }: FilterPanelBaseProps) {
   const searchParams = useSearchParams();
-  const [searchValue, setSearchValue] = useState(
+  // 初期値はsearchParamsから取得（初回マウント時に状態を事前に同期）
+  const [searchValue, setSearchValue] = useState(() => 
     searchParams.get("search") || ""
   );
+
+  // searchParams変更時に検索値を同期
+  useEffect(() => {
+    const searchParam = searchParams.get("search") || "";
+    setSearchValue(searchParam);
+  }, [searchParams]);
 
   // アクティブなフィルターがあるかどうかを判定（searchパラメータも含む）
   // searchValue（入力中の値）とsearchParams（適用済みの値）の両方を確認

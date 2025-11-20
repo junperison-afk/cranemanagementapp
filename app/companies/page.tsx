@@ -1,8 +1,16 @@
+import { Suspense } from "react";
 import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
-import { prisma } from "@/lib/prisma";
-import CompaniesPageClient from "@/components/companies/companies-page-client";
+import CompaniesPageContent from "@/components/companies/companies-page-content";
+import TableSkeleton from "@/components/common/table-skeleton";
+import {
+  CompanyFilterButtonWrapper,
+  CompanyFilterPanelWrapper,
+} from "@/components/companies/company-filters-wrapper";
+import CreateButton from "@/components/common/create-button";
+import CompanyCreateForm from "@/components/companies/company-create-form";
+import DeleteButton from "@/components/common/delete-button";
 
 // 常に最新のデータを取得するため、動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -32,138 +40,51 @@ export default async function CompaniesPage({
     redirect("/login");
   }
 
-  const search = searchParams.search || "";
-  const page = parseInt(searchParams.page || "1");
-  const limit = parseInt(searchParams.limit || "20");
-  const skip = (page - 1) * limit;
-
-  // フィルター条件の構築
-  const whereConditions: any[] = [];
-
-  // 検索条件
-  if (search) {
-    whereConditions.push({
-      OR: [
-        { name: { contains: search } },
-        { address: { contains: search } },
-        { email: { contains: search } },
-      ],
-    });
-  }
-
-  // 郵便番号フィルター
-  if (searchParams.postalCode) {
-    whereConditions.push({
-      postalCode: { contains: searchParams.postalCode },
-    });
-  }
-
-  // 住所フィルター
-  if (searchParams.address) {
-    whereConditions.push({
-      address: { contains: searchParams.address },
-    });
-  }
-
-  // 電話番号フィルター
-  if (searchParams.phone) {
-    whereConditions.push({
-      phone: { contains: searchParams.phone },
-    });
-  }
-
-  // メールフィルター
-  if (searchParams.email) {
-    whereConditions.push({
-      email: { contains: searchParams.email },
-    });
-  }
-
-  // 業種フィルター
-  if (searchParams.industryType) {
-    whereConditions.push({
-      industryType: { contains: searchParams.industryType },
-    });
-  }
-
-  // 請求フラグフィルター
-  if (
-    searchParams.billingFlag !== undefined &&
-    searchParams.billingFlag !== ""
-  ) {
-    whereConditions.push({
-      billingFlag: searchParams.billingFlag === "true",
-    });
-  }
-
-  // 関連情報のフィルター
-  if (searchParams.hasSalesOpportunities === "true") {
-    whereConditions.push({
-      salesOpportunities: { some: {} },
-    });
-  }
-
-  if (searchParams.hasProjects === "true") {
-    whereConditions.push({
-      projects: { some: {} },
-    });
-  }
-
-  if (searchParams.hasEquipment === "true") {
-    whereConditions.push({
-      equipment: { some: {} },
-    });
-  }
-
-  // 更新日時フィルター
-  if (searchParams.updatedAfter) {
-    whereConditions.push({
-      updatedAt: { gte: new Date(searchParams.updatedAfter) },
-    });
-  }
-
-  if (searchParams.updatedBefore) {
-    whereConditions.push({
-      updatedAt: { lte: new Date(searchParams.updatedBefore) },
-    });
-  }
-
-  const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
-
-  const [companies, total] = await Promise.all([
-    prisma.company.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: {
-        updatedAt: "desc",
-      },
-      include: {
-        _count: {
-          select: {
-            salesOpportunities: true,
-            equipment: true,
-            projects: true,
-          },
-        },
-      },
-    }),
-    prisma.company.count({ where }),
-  ]);
-
-  const totalPages = Math.ceil(total / limit);
-
   return (
     <MainLayout>
-      <CompaniesPageClient
-        companies={companies}
-        total={total}
-        page={page}
-        limit={limit}
-        skip={skip}
-        totalPages={totalPages}
-        searchParams={searchParams}
-      />
+      <div className="h-full flex flex-col">
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between flex-shrink-0 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">取引先一覧</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              取引先の検索・管理ができます
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <DeleteButton
+              eventName="companySelectionChange"
+              apiPath="/api/companies"
+              resourceName="取引先"
+            />
+            <CompanyFilterButtonWrapper />
+            <CreateButton
+              title="取引先を新規作成"
+              formComponent={CompanyCreateForm}
+              resourcePath="companies"
+            />
+          </div>
+        </div>
+
+        {/* データテーブル部分 */}
+        <div className="flex-1 flex gap-0 min-h-0 h-full">
+          {/* フィルターパネル */}
+          <div>
+            <CompanyFilterPanelWrapper />
+          </div>
+
+          {/* データテーブル */}
+          <div className="flex-1 min-w-0">
+            <Suspense
+              fallback={
+                <TableSkeleton rowCount={10} columnCount={8} />
+              }
+            >
+              <CompaniesPageContent searchParams={searchParams} />
+            </Suspense>
+          </div>
+        </div>
+      </div>
     </MainLayout>
   );
 }

@@ -1,8 +1,16 @@
+import { Suspense } from "react";
 import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
-import { prisma } from "@/lib/prisma";
-import EquipmentPageClient from "@/components/equipment/equipment-page-client";
+import EquipmentPageContent from "@/components/equipment/equipment-page-content";
+import TableSkeleton from "@/components/common/table-skeleton";
+import {
+  EquipmentFilterButtonWrapper,
+  EquipmentFilterPanelWrapper,
+} from "@/components/equipment/equipment-filters-wrapper";
+import CreateButton from "@/components/common/create-button";
+import EquipmentCreateForm from "@/components/equipment/equipment-create-form";
+import DeleteButton from "@/components/common/delete-button";
 
 // 常に最新のデータを取得するため、動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -28,122 +36,51 @@ export default async function EquipmentPage({
     redirect("/login");
   }
 
-  const search = searchParams.search || "";
-  const page = parseInt(searchParams.page || "1");
-  const limit = parseInt(searchParams.limit || "20");
-  const skip = (page - 1) * limit;
-
-  // フィルター条件の構築
-  const whereConditions: any[] = [];
-
-  // 検索条件
-  if (search) {
-    whereConditions.push({
-      OR: [
-        { name: { contains: search } },
-        { model: { contains: search } },
-        { serialNumber: { contains: search } },
-        { location: { contains: search } },
-        { notes: { contains: search } },
-        { company: { name: { contains: search } } },
-      ],
-    });
-  }
-
-  // 取引先フィルター
-  if (searchParams.companyId) {
-    whereConditions.push({
-      companyId: searchParams.companyId,
-    });
-  }
-
-  // プロジェクトフィルター
-  if (searchParams.projectId) {
-    whereConditions.push({
-      projectId: searchParams.projectId,
-    });
-  }
-
-  // 機種・型式フィルター
-  if (searchParams.model) {
-    whereConditions.push({
-      model: { contains: searchParams.model },
-    });
-  }
-
-  // 製造番号フィルター
-  if (searchParams.serialNumber) {
-    whereConditions.push({
-      serialNumber: { contains: searchParams.serialNumber },
-    });
-  }
-
-  // 設置場所フィルター
-  if (searchParams.location) {
-    whereConditions.push({
-      location: { contains: searchParams.location },
-    });
-  }
-
-  // 更新日時フィルター
-  if (searchParams.updatedAfter) {
-    whereConditions.push({
-      updatedAt: { gte: new Date(searchParams.updatedAfter) },
-    });
-  }
-
-  if (searchParams.updatedBefore) {
-    whereConditions.push({
-      updatedAt: { lte: new Date(searchParams.updatedBefore) },
-    });
-  }
-
-  const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
-
-  const [equipment, total] = await Promise.all([
-    prisma.equipment.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: {
-        updatedAt: "desc",
-      },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        project: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        _count: {
-          select: {
-            inspectionRecords: true,
-          },
-        },
-      },
-    }),
-    prisma.equipment.count({ where }),
-  ]);
-
-  const totalPages = Math.ceil(total / limit);
-
   return (
     <MainLayout>
-      <EquipmentPageClient
-        equipment={equipment}
-        total={total}
-        page={page}
-        limit={limit}
-        skip={skip}
-        totalPages={totalPages}
-        searchParams={searchParams}
-      />
+      <div className="h-full flex flex-col">
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between flex-shrink-0 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">機器一覧</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              機器の検索・管理ができます
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <DeleteButton
+              eventName="equipmentSelectionChange"
+              apiPath="/api/equipment"
+              resourceName="機器"
+            />
+            <EquipmentFilterButtonWrapper />
+            <CreateButton
+              title="機器を新規作成"
+              formComponent={EquipmentCreateForm}
+              resourcePath="equipment"
+            />
+          </div>
+        </div>
+
+        {/* データテーブル部分 */}
+        <div className="flex-1 flex gap-0 min-h-0 h-full">
+          {/* フィルターパネル */}
+          <div>
+            <EquipmentFilterPanelWrapper />
+          </div>
+
+          {/* データテーブル */}
+          <div className="flex-1 min-w-0">
+            <Suspense
+              fallback={
+                <TableSkeleton rowCount={10} columnCount={9} />
+              }
+            >
+              <EquipmentPageContent searchParams={searchParams} />
+            </Suspense>
+          </div>
+        </div>
+      </div>
     </MainLayout>
   );
 }

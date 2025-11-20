@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import ContactTable from "./contact-table";
 import { useSelectionEvent } from "@/hooks/use-selection-event";
 
@@ -36,6 +37,18 @@ export default function ContactTableWrapper({
   searchParams,
 }: ContactTableWrapperProps) {
   const handleSelectionChange = useSelectionEvent("contactSelectionChange");
+
+  // データテーブルが読み込まれたことを通知
+  useEffect(() => {
+    // 次のフレームで実行して、DOMの更新を待つ
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("page:content:loaded"));
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [contacts, total, page, limit, skip, totalPages]);
 
   return (
     <ContactTable

@@ -1,8 +1,16 @@
+import { Suspense } from "react";
 import { getSession } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
 import MainLayout from "@/components/layout/main-layout";
-import { prisma } from "@/lib/prisma";
-import ProjectsPageClient from "@/components/projects/projects-page-client";
+import ProjectsPageContent from "@/components/projects/projects-page-content";
+import TableSkeleton from "@/components/common/table-skeleton";
+import {
+  ProjectFilterButtonWrapper,
+  ProjectFilterPanelWrapper,
+} from "@/components/projects/project-filters-wrapper";
+import CreateButton from "@/components/common/create-button";
+import ProjectCreateForm from "@/components/projects/project-create-form";
+import DeleteButton from "@/components/common/delete-button";
 
 // 常に最新のデータを取得するため、動的レンダリングを強制
 export const dynamic = 'force-dynamic';
@@ -32,163 +40,51 @@ export default async function ProjectsPage({
     redirect("/login");
   }
 
-  const search = searchParams.search || "";
-  const page = parseInt(searchParams.page || "1");
-  const limit = parseInt(searchParams.limit || "20");
-  const skip = (page - 1) * limit;
-
-  // フィルター条件の構築
-  const whereConditions: any[] = [];
-
-  // 検索条件
-  if (search) {
-    whereConditions.push({
-      OR: [
-        { title: { contains: search } },
-        { notes: { contains: search } },
-        { company: { name: { contains: search } } },
-      ],
-    });
-  }
-
-  // ステータスフィルター
-  if (searchParams.status) {
-    whereConditions.push({
-      status: searchParams.status,
-    });
-  }
-
-  // 取引先フィルター
-  if (searchParams.companyId) {
-    whereConditions.push({
-      companyId: searchParams.companyId,
-    });
-  }
-
-  // 担当者フィルター
-  if (searchParams.assignedUserId) {
-    whereConditions.push({
-      assignedUserId: searchParams.assignedUserId,
-    });
-  }
-
-  // 開始日フィルター
-  if (searchParams.startDateAfter) {
-    whereConditions.push({
-      startDate: { gte: new Date(searchParams.startDateAfter) },
-    });
-  }
-
-  if (searchParams.startDateBefore) {
-    whereConditions.push({
-      startDate: { lte: new Date(searchParams.startDateBefore) },
-    });
-  }
-
-  // 終了日フィルター
-  if (searchParams.endDateAfter) {
-    whereConditions.push({
-      endDate: { gte: new Date(searchParams.endDateAfter) },
-    });
-  }
-
-  if (searchParams.endDateBefore) {
-    whereConditions.push({
-      endDate: { lte: new Date(searchParams.endDateBefore) },
-    });
-  }
-
-  // 金額フィルター
-  if (searchParams.amount) {
-    const amountValue = parseFloat(searchParams.amount);
-    if (!isNaN(amountValue)) {
-      whereConditions.push({
-        amount: { equals: amountValue },
-      });
-    }
-  }
-
-  // 機器数フィルター（_count.equipmentを使用）
-  if (searchParams.equipmentCount) {
-    const equipmentCountValue = parseInt(searchParams.equipmentCount);
-    if (!isNaN(equipmentCountValue)) {
-      // 機器数でのフィルターは、取得後にフィルタリングする必要があるため、
-      // ここでは処理しない（または別の方法で実装）
-    }
-  }
-
-  // 更新日時フィルター
-  if (searchParams.updatedAfter) {
-    whereConditions.push({
-      updatedAt: { gte: new Date(searchParams.updatedAfter) },
-    });
-  }
-
-  if (searchParams.updatedBefore) {
-    whereConditions.push({
-      updatedAt: { lte: new Date(searchParams.updatedBefore) },
-    });
-  }
-
-  const where = whereConditions.length > 0 ? { AND: whereConditions } : {};
-
-  const [projects, total] = await Promise.all([
-    prisma.project.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: {
-        updatedAt: "desc",
-      },
-      include: {
-        company: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        assignedUser: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        salesOpportunity: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-        _count: {
-          select: {
-            equipment: true,
-          },
-        },
-      },
-    }),
-    prisma.project.count({ where }),
-  ]);
-
-  const totalPages = Math.ceil(total / limit);
-
-  // Decimal型をnumber型に変換
-  const projectsWithNumberAmount = projects.map((project) => ({
-    ...project,
-    amount: project.amount ? project.amount.toNumber() : null,
-  }));
-
   return (
     <MainLayout>
-      <ProjectsPageClient
-        projects={projectsWithNumberAmount}
-        total={total}
-        page={page}
-        limit={limit}
-        skip={skip}
-        totalPages={totalPages}
-        searchParams={searchParams}
-      />
+      <div className="h-full flex flex-col">
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between flex-shrink-0 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">プロジェクト一覧</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              プロジェクトの検索・管理ができます
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <DeleteButton
+              eventName="projectSelectionChange"
+              apiPath="/api/projects"
+              resourceName="プロジェクト"
+            />
+            <ProjectFilterButtonWrapper />
+            <CreateButton
+              title="プロジェクトを新規作成"
+              formComponent={ProjectCreateForm}
+              resourcePath="projects"
+            />
+          </div>
+        </div>
+
+        {/* データテーブル部分 */}
+        <div className="flex-1 flex gap-0 min-h-0 h-full">
+          {/* フィルターパネル */}
+          <div>
+            <ProjectFilterPanelWrapper />
+          </div>
+
+          {/* データテーブル */}
+          <div className="flex-1 min-w-0">
+            <Suspense
+              fallback={
+                <TableSkeleton rowCount={10} columnCount={9} />
+              }
+            >
+              <ProjectsPageContent searchParams={searchParams} />
+            </Suspense>
+          </div>
+        </div>
+      </div>
     </MainLayout>
   );
 }

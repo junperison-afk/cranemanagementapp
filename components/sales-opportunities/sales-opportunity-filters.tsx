@@ -27,7 +27,8 @@ export function SalesOpportunityFilterPanel({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [filters, setFilters] = useState<FilterState>({
+  // 初期値はsearchParamsから取得（初回マウント時に状態を事前に同期）
+  const [filters, setFilters] = useState<FilterState>(() => ({
     status: searchParams.get("status") || "",
     companyId: searchParams.get("companyId") || "",
     estimatedAmount: searchParams.get("estimatedAmount") || "",
@@ -35,7 +36,20 @@ export function SalesOpportunityFilterPanel({
     estimateCount: searchParams.get("estimateCount") || "",
     occurredAfter: searchParams.get("occurredAfter") || "",
     occurredBefore: searchParams.get("occurredBefore") || "",
-  });
+  }));
+
+  // searchParamsからフィルター状態を同期（isOpenに関係なく実行）
+  useEffect(() => {
+    setFilters({
+      status: searchParams.get("status") || "",
+      companyId: searchParams.get("companyId") || "",
+      estimatedAmount: searchParams.get("estimatedAmount") || "",
+      craneCount: searchParams.get("craneCount") || "",
+      estimateCount: searchParams.get("estimateCount") || "",
+      occurredAfter: searchParams.get("occurredAfter") || "",
+      occurredBefore: searchParams.get("occurredBefore") || "",
+    });
+  }, [searchParams]);
   const [companySearchQuery, setCompanySearchQuery] = useState("");
   const [companySearchResults, setCompanySearchResults] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string } | null>(null);
@@ -44,6 +58,7 @@ export function SalesOpportunityFilterPanel({
 
   // 選択された取引先の名前を初期化
   useEffect(() => {
+    if (!isOpen) return;
     const companyId = searchParams.get("companyId");
     if (companyId) {
       fetch(`/api/companies/${companyId}`)
@@ -58,10 +73,11 @@ export function SalesOpportunityFilterPanel({
           console.error("取引先取得エラー:", error);
         });
     }
-  }, [searchParams]);
+  }, [searchParams, isOpen]);
 
   // 取引先のリアルタイム検索
   useEffect(() => {
+    if (!isOpen) return;
     if (companySearchQuery.trim().length === 0) {
       setCompanySearchResults([]);
       setShowCompanyResults(false);
@@ -83,9 +99,7 @@ export function SalesOpportunityFilterPanel({
     }, 300); // 300msのデバウンス
 
     return () => clearTimeout(timeoutId);
-  }, [companySearchQuery]);
-
-  if (!isOpen) return null;
+  }, [companySearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
     setIsApplying(true);
@@ -136,8 +150,6 @@ export function SalesOpportunityFilterPanel({
   };
 
   // hasActiveFiltersはFilterPanelBaseで自動判定されるため、削除
-
-  if (!isOpen) return null;
 
   return (
     <FilterPanelBase

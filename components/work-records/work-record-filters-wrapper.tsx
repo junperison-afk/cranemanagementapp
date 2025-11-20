@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FilterButton from "@/components/common/filter-button";
 import FilterPanelWrapper from "@/components/common/filter-panel-wrapper";
@@ -8,7 +9,16 @@ import { WorkRecordFilterPanel } from "./work-record-filters";
 export function WorkRecordFilterButtonWrapper() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isFilterOpen = searchParams.get("filter") === "open";
+  const [isPending, startTransition] = useTransition();
+  // クライアント側の状態で即座に表示を制御
+  const [localIsOpen, setLocalIsOpen] = useState(
+    searchParams.get("filter") === "open"
+  );
+
+  // URLパラメータと同期
+  useEffect(() => {
+    setLocalIsOpen(searchParams.get("filter") === "open");
+  }, [searchParams]);
 
   const activeFilterCount = [
     searchParams.get("search"),
@@ -25,13 +35,20 @@ export function WorkRecordFilterButtonWrapper() {
   ].filter((v) => v).length;
 
   const toggleFilter = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (isFilterOpen) {
-      params.delete("filter");
-    } else {
-      params.set("filter", "open");
-    }
-    router.push(`/work-records?${params.toString()}`);
+    // 即座にローカル状態を更新してUIを反応させる
+    const newIsOpen = !localIsOpen;
+    setLocalIsOpen(newIsOpen);
+
+    // URLパラメータは非同期で更新（ページ全体の再レンダリングを避ける）
+    startTransition(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (newIsOpen) {
+        params.set("filter", "open");
+      } else {
+        params.delete("filter");
+      }
+      router.replace(`/work-records?${params.toString()}`);
+    });
   };
 
   return (
@@ -45,17 +62,32 @@ export function WorkRecordFilterButtonWrapper() {
 export function WorkRecordFilterPanelWrapper() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isFilterOpen = searchParams.get("filter") === "open";
+  const [isPending, startTransition] = useTransition();
+  // クライアント側の状態で即座に表示を制御
+  const [localIsOpen, setLocalIsOpen] = useState(
+    searchParams.get("filter") === "open"
+  );
+
+  // URLパラメータと同期
+  useEffect(() => {
+    setLocalIsOpen(searchParams.get("filter") === "open");
+  }, [searchParams]);
 
   const closeFilter = () => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete("filter");
-    router.push(`/work-records?${params.toString()}`);
+    // 即座にローカル状態を更新してUIを反応させる
+    setLocalIsOpen(false);
+
+    // URLパラメータは非同期で更新
+    startTransition(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("filter");
+      router.replace(`/work-records?${params.toString()}`);
+    });
   };
 
   return (
-    <FilterPanelWrapper isOpen={isFilterOpen}>
-      <WorkRecordFilterPanel isOpen={isFilterOpen} onClose={closeFilter} />
+    <FilterPanelWrapper isOpen={localIsOpen}>
+      <WorkRecordFilterPanel isOpen={localIsOpen} onClose={closeFilter} />
     </FilterPanelWrapper>
   );
 }

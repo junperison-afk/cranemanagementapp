@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import CompanyTable from "./company-table";
 import { useSelectionEvent } from "@/hooks/use-selection-event";
 
@@ -38,6 +39,18 @@ export default function CompanyTableWrapper({
   searchParams,
 }: CompanyTableWrapperProps) {
   const handleSelectionChange = useSelectionEvent("companySelectionChange");
+
+  // データテーブルが読み込まれたことを通知
+  useEffect(() => {
+    // 次のフレームで実行して、DOMの更新を待つ
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("page:content:loaded"));
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [companies, total, page, limit, skip, totalPages]);
 
   return (
     <CompanyTable

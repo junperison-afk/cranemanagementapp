@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import ProjectTable from "./project-table";
 import { useSelectionEvent } from "@/hooks/use-selection-event";
 
@@ -49,6 +50,18 @@ export default function ProjectTableWrapper({
   searchParams,
 }: ProjectTableWrapperProps) {
   const handleSelectionChange = useSelectionEvent("projectSelectionChange");
+
+  // データテーブルが読み込まれたことを通知
+  useEffect(() => {
+    // 次のフレームで実行して、DOMの更新を待つ
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("page:content:loaded"));
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [projects, total, page, limit, skip, totalPages]);
 
   return (
     <ProjectTable

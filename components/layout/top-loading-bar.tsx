@@ -71,11 +71,25 @@ export default function TopLoadingBar() {
     };
   }, []);
 
-  // パスが変更されたら（ページが表示されたら）ローディングを完了
+  // パスが変更されたら、ローディングを70%で停止（データ読み込み完了を待つ）
   useEffect(() => {
     if (previousPathnameRef.current !== pathname) {
       previousPathnameRef.current = pathname;
       
+      // パス変更時は70%で停止したまま（データ読み込み完了を待つ）
+      // データ読み込み完了は "page:content:loaded" イベントで通知される
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, [pathname]);
+
+  // データコンテンツの読み込み完了をリッスン
+  useEffect(() => {
+    const handleContentLoaded = () => {
       if (isLoadingRef.current) {
         // ローディングを完了
         if (intervalRef.current) {
@@ -90,14 +104,14 @@ export default function TopLoadingBar() {
           setProgress(0);
         }, 200); // 100%表示後に少し待ってから非表示
       }
-    }
+    };
+
+    window.addEventListener("page:content:loaded", handleContentLoaded);
 
     return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
+      window.removeEventListener("page:content:loaded", handleContentLoaded);
     };
-  }, [pathname]);
+  }, []);
 
   if (!isLoading) return null;
 

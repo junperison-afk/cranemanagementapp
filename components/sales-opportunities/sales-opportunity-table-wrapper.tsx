@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import SalesOpportunityTable from "./sales-opportunity-table";
 import { useSelectionEvent } from "@/hooks/use-selection-event";
 
@@ -41,6 +42,18 @@ export default function SalesOpportunityTableWrapper({
   searchParams,
 }: SalesOpportunityTableWrapperProps) {
   const handleSelectionChange = useSelectionEvent("salesOpportunitySelectionChange");
+
+  // データテーブルが読み込まれたことを通知
+  useEffect(() => {
+    // 次のフレームで実行して、DOMの更新を待つ
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("page:content:loaded"));
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [salesOpportunities, total, page, limit, skip, totalPages]);
 
   return (
     <SalesOpportunityTable

@@ -23,14 +23,27 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [filters, setFilters] = useState<FilterState>({
+  // 初期値はsearchParamsから取得（初回マウント時に状態を事前に同期）
+  const [filters, setFilters] = useState<FilterState>(() => ({
     position: searchParams.get("position") || "",
     companyId: searchParams.get("companyId") || "",
     phone: searchParams.get("phone") || "",
     email: searchParams.get("email") || "",
     updatedAfter: searchParams.get("updatedAfter") || "",
     updatedBefore: searchParams.get("updatedBefore") || "",
-  });
+  }));
+
+  // searchParamsからフィルター状態を同期（isOpenに関係なく実行）
+  useEffect(() => {
+    setFilters({
+      position: searchParams.get("position") || "",
+      companyId: searchParams.get("companyId") || "",
+      phone: searchParams.get("phone") || "",
+      email: searchParams.get("email") || "",
+      updatedAfter: searchParams.get("updatedAfter") || "",
+      updatedBefore: searchParams.get("updatedBefore") || "",
+    });
+  }, [searchParams]);
   const [companySearchQuery, setCompanySearchQuery] = useState("");
   const [companySearchResults, setCompanySearchResults] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string } | null>(null);
@@ -39,6 +52,7 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
 
   // 選択された取引先の名前を初期化
   useEffect(() => {
+    if (!isOpen) return;
     const companyId = searchParams.get("companyId");
     if (companyId) {
       fetch(`/api/companies/${companyId}`)
@@ -53,10 +67,11 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
           console.error("取引先取得エラー:", error);
         });
     }
-  }, [searchParams]);
+  }, [searchParams, isOpen]);
 
   // 取引先のリアルタイム検索
   useEffect(() => {
+    if (!isOpen) return;
     if (companySearchQuery.trim().length === 0) {
       setCompanySearchResults([]);
       setShowCompanyResults(false);
@@ -78,9 +93,7 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
     }, 300); // 300msのデバウンス
 
     return () => clearTimeout(timeoutId);
-  }, [companySearchQuery]);
-
-  if (!isOpen) return null;
+  }, [companySearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
     setIsApplying(true);
@@ -130,8 +143,6 @@ export function ContactFilterPanel({ isOpen, onClose }: ContactFiltersProps) {
   };
 
   // hasActiveFiltersはFilterPanelBaseで自動判定されるため、削除
-
-  if (!isOpen) return null;
 
   return (
     <FilterPanelBase

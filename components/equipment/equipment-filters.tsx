@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FilterPanelBase from "@/components/common/filter-panel-base";
 import DatePicker from "@/components/common/date-picker";
@@ -25,16 +25,26 @@ export function EquipmentFilterPanel({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [filters, setFilters] = useState<FilterState>({
+  // 初期値はsearchParamsから取得（初回マウント時に状態を事前に同期）
+  const [filters, setFilters] = useState<FilterState>(() => ({
     model: searchParams.get("model") || "",
     serialNumber: searchParams.get("serialNumber") || "",
     location: searchParams.get("location") || "",
     updatedAfter: searchParams.get("updatedAfter") || "",
     updatedBefore: searchParams.get("updatedBefore") || "",
-  });
-  const [isApplying, setIsApplying] = useState(false);
+  }));
 
-  if (!isOpen) return null;
+  // searchParamsからフィルター状態を同期（isOpenに関係なく実行）
+  useEffect(() => {
+    setFilters({
+      model: searchParams.get("model") || "",
+      serialNumber: searchParams.get("serialNumber") || "",
+      location: searchParams.get("location") || "",
+      updatedAfter: searchParams.get("updatedAfter") || "",
+      updatedBefore: searchParams.get("updatedBefore") || "",
+    });
+  }, [searchParams]);
+  const [isApplying, setIsApplying] = useState(false);
 
   const applyFilters = (searchValue: string) => {
     setIsApplying(true);
@@ -79,8 +89,6 @@ export function EquipmentFilterPanel({
   };
 
   // hasActiveFiltersはFilterPanelBaseで自動判定されるため、削除
-
-  if (!isOpen) return null;
 
   return (
     <FilterPanelBase

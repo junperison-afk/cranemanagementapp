@@ -30,7 +30,8 @@ export function WorkRecordFilterPanel({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [filters, setFilters] = useState<FilterState>({
+  // 初期値はsearchParamsから取得（初回マウント時に状態を事前に同期）
+  const [filters, setFilters] = useState<FilterState>(() => ({
     equipmentId: searchParams.get("equipmentId") || "",
     userId: searchParams.get("userId") || "",
     workType: searchParams.get("workType") || "",
@@ -41,7 +42,23 @@ export function WorkRecordFilterPanel({
     inspectionDateBefore: searchParams.get("inspectionDateBefore") || "",
     updatedAfter: searchParams.get("updatedAfter") || "",
     updatedBefore: searchParams.get("updatedBefore") || "",
-  });
+  }));
+
+  // searchParamsからフィルター状態を同期（isOpenに関係なく実行）
+  useEffect(() => {
+    setFilters({
+      equipmentId: searchParams.get("equipmentId") || "",
+      userId: searchParams.get("userId") || "",
+      workType: searchParams.get("workType") || "",
+      overallJudgment: searchParams.get("overallJudgment") || "",
+      findings: searchParams.get("findings") || "",
+      resultSummary: searchParams.get("resultSummary") || "",
+      inspectionDateAfter: searchParams.get("inspectionDateAfter") || "",
+      inspectionDateBefore: searchParams.get("inspectionDateBefore") || "",
+      updatedAfter: searchParams.get("updatedAfter") || "",
+      updatedBefore: searchParams.get("updatedBefore") || "",
+    });
+  }, [searchParams]);
   const [equipmentSearchQuery, setEquipmentSearchQuery] = useState("");
   const [equipmentSearchResults, setEquipmentSearchResults] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedEquipment, setSelectedEquipment] = useState<{ id: string; name: string } | null>(null);
@@ -54,6 +71,7 @@ export function WorkRecordFilterPanel({
 
   // 選択された機器の名前を初期化
   useEffect(() => {
+    if (!isOpen) return;
     const equipmentId = searchParams.get("equipmentId");
     if (equipmentId) {
       fetch(`/api/equipment/${equipmentId}`)
@@ -68,10 +86,11 @@ export function WorkRecordFilterPanel({
           console.error("機器取得エラー:", error);
         });
     }
-  }, [searchParams]);
+  }, [searchParams, isOpen]);
 
   // 選択されたユーザーの名前を初期化
   useEffect(() => {
+    if (!isOpen) return;
     const userId = searchParams.get("userId");
     if (userId) {
       fetch(`/api/users/${userId}`)
@@ -86,10 +105,11 @@ export function WorkRecordFilterPanel({
           console.error("ユーザー取得エラー:", error);
         });
     }
-  }, [searchParams]);
+  }, [searchParams, isOpen]);
 
   // 機器のリアルタイム検索
   useEffect(() => {
+    if (!isOpen) return;
     if (equipmentSearchQuery.trim().length === 0) {
       setEquipmentSearchResults([]);
       setShowEquipmentResults(false);
@@ -111,10 +131,11 @@ export function WorkRecordFilterPanel({
     }, 300); // 300msのデバウンス
 
     return () => clearTimeout(timeoutId);
-  }, [equipmentSearchQuery]);
+  }, [equipmentSearchQuery, isOpen]);
 
   // ユーザーのリアルタイム検索
   useEffect(() => {
+    if (!isOpen) return;
     if (userSearchQuery.trim().length === 0) {
       setUserSearchResults([]);
       setShowUserResults(false);
@@ -136,9 +157,7 @@ export function WorkRecordFilterPanel({
     }, 300); // 300msのデバウンス
 
     return () => clearTimeout(timeoutId);
-  }, [userSearchQuery]);
-
-  if (!isOpen) return null;
+  }, [userSearchQuery, isOpen]);
 
   const applyFilters = (searchValue: string) => {
     setIsApplying(true);

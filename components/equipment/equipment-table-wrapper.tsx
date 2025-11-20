@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import EquipmentTable from "./equipment-table";
 import { useSelectionEvent } from "@/hooks/use-selection-event";
 
@@ -43,6 +44,18 @@ export default function EquipmentTableWrapper({
   searchParams,
 }: EquipmentTableWrapperProps) {
   const handleSelectionChange = useSelectionEvent("equipmentSelectionChange");
+
+  // データテーブルが読み込まれたことを通知
+  useEffect(() => {
+    // 次のフレームで実行して、DOMの更新を待つ
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("page:content:loaded"));
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [equipment, total, page, limit, skip, totalPages]);
 
   return (
     <EquipmentTable

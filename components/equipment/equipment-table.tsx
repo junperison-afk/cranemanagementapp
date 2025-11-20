@@ -117,9 +117,6 @@ export default function EquipmentTable({
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     更新日
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
-                    操作
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white">
@@ -179,14 +176,6 @@ export default function EquipmentTable({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(item.updatedAt).toLocaleDateString("ja-JP")}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link
-                        href={`/equipment/${item.id}`}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        詳細
-                      </Link>
                     </td>
                   </tr>
                 ))}
