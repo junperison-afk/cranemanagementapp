@@ -84,7 +84,9 @@ export default function QuoteEditForm({
   } = useForm<QuoteFormData>({
     resolver: zodResolver(quoteFormSchema),
     defaultValues: {
-      status: quote.status,
+      status: (quote.status === "DRAFT" || quote.status === "SENT" || quote.status === "ACCEPTED" || quote.status === "REJECTED")
+        ? quote.status
+        : undefined,
       conditions: quote.conditions || "",
       validUntil: quote.validUntil
         ? new Date(quote.validUntil).toISOString().split("T")[0]
