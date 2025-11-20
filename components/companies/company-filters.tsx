@@ -69,7 +69,16 @@ export function CompanyFilterPanel({ isOpen, onClose }: CompanyFiltersProps) {
   });
 
   const applyFilters = (searchValue: string) => {
-    applyFiltersBase(searchValue, filters);
+    // FilterStateをRecord<string, string>に変換（オプショナルプロパティを文字列に変換）
+    const filtersRecord: Record<string, string> = {
+      postalCode: filters.postalCode || "",
+      address: filters.address || "",
+      phone: filters.phone || "",
+      email: filters.email || "",
+      updatedAfter: filters.updatedAfter || "",
+      updatedBefore: filters.updatedBefore || "",
+    };
+    applyFiltersBase(searchValue, filtersRecord);
   };
 
   const clearFilters = () => {
