@@ -48,7 +48,7 @@ async function generateContractNumber(): Promise<string> {
   });
 
   let sequence = 1;
-  if (lastContract) {
+  if (lastContract && lastContract.contractNumber) {
     // 最後の契約番号から連番を抽出（例: C-202411-0001 → 1）
     const lastSequence = parseInt(lastContract.contractNumber.split("-")[2] || "0", 10);
     sequence = lastSequence + 1;
