@@ -11,6 +11,7 @@ interface Contract {
   contractDate: Date | string;
   amount: number;
   conditions: string | null;
+  status: string;
   items: Array<{
     id: string;
     itemNumber: number;
