@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { XMarkIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PrinterIcon } from "@heroicons/react/24/outline";
 import QuoteEditForm from "./quote-edit-form";
 import QuoteTemplateSelector from "./quote-template-selector";
 
@@ -130,8 +130,8 @@ export default function QuoteDetailModal({
                       onClick={() => setIsQuoteTemplateModalOpen(true)}
                       className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
                     >
-                      <DocumentTextIcon className="h-4 w-4" />
-                      見積書作成
+                      <PrinterIcon className="h-4 w-4" />
+                      見積書印刷
                     </button>
                     <button
                       onClick={() => setIsEditing(true)}

@@ -51,7 +51,24 @@ export async function GET(
             },
           },
         },
-        contract: true,
+        contracts: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            createdBy: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            items: {
+              orderBy: {
+                itemNumber: "asc",
+              },
+            },
+          },
+        },
         project: {
           select: {
             id: true,
@@ -62,6 +79,7 @@ export async function GET(
         _count: {
           select: {
             quotes: true,
+            contracts: true,
           },
         },
       },
@@ -90,6 +108,17 @@ export async function GET(
           amount: item.amount.toNumber(),
         })),
       })),
+      contracts: salesOpportunity.contracts.map((contract) => ({
+        ...contract,
+        amount: contract.amount.toNumber(),
+        items: contract.items.map((item) => ({
+          ...item,
+          quantity: item.quantity?.toNumber() ?? null,
+          unitPrice: item.unitPrice?.toNumber() ?? null,
+          amount: item.amount.toNumber(),
+        })),
+      })),
+      _count: salesOpportunity._count,
     };
 
     return NextResponse.json(salesOpportunityWithNumberAmount);
@@ -196,7 +225,24 @@ export async function PATCH(
             createdAt: "desc",
           },
         },
-        contract: true,
+        contracts: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          include: {
+            createdBy: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            items: {
+              orderBy: {
+                itemNumber: "asc",
+              },
+            },
+          },
+        },
         project: {
           select: {
             id: true,

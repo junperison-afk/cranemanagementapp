@@ -35,7 +35,24 @@ export default async function SalesOpportunityDetailContent({
           },
         },
       },
-      contract: true,
+      contracts: {
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          items: {
+            orderBy: {
+              itemNumber: "asc",
+            },
+          },
+        },
+      },
       project: {
         select: {
           id: true,

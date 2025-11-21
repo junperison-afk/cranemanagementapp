@@ -20,21 +20,21 @@ interface Template {
   } | null;
 }
 
-interface QuoteTemplateSelectorProps {
+interface ContractTemplateSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   salesOpportunityId: string;
-  quoteId?: string; // 見積ID（オプショナル、指定されると見積データを使用）
+  contractId?: string; // 受注書ID（オプショナル、指定されると受注書データを使用）
   onSuccess?: () => void;
 }
 
-export default function QuoteTemplateSelector({
+export default function ContractTemplateSelector({
   isOpen,
   onClose,
   salesOpportunityId,
-  quoteId,
+  contractId,
   onSuccess,
-}: QuoteTemplateSelectorProps) {
+}: ContractTemplateSelectorProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +52,7 @@ export default function QuoteTemplateSelector({
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/document-templates?templateType=QUOTE");
+      const response = await fetch("/api/document-templates?templateType=CONTRACT");
       if (!response.ok) {
         throw new Error("テンプレートの取得に失敗しました");
       }
@@ -82,7 +82,7 @@ export default function QuoteTemplateSelector({
 
     try {
       const response = await fetch(
-        `/api/sales-opportunities/${salesOpportunityId}/generate-quote`,
+        `/api/sales-opportunities/${salesOpportunityId}/generate-contract`,
         {
           method: "POST",
           headers: {
@@ -90,17 +90,17 @@ export default function QuoteTemplateSelector({
           },
           body: JSON.stringify({
             templateId: selectedTemplateId,
-            quoteId: quoteId || undefined, // 見積IDを送信（指定されている場合）
+            contractId: contractId || undefined, // 受注書IDを送信（指定されている場合）
           }),
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "見積書の生成に失敗しました");
+        throw new Error(errorData.error || "受注書の生成に失敗しました");
       }
 
-      // 生成されたWordファイルをダウンロード
+      // 生成されたファイルをダウンロード
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -108,7 +108,7 @@ export default function QuoteTemplateSelector({
       
       // Content-Dispositionヘッダーからファイル名を取得
       const contentDisposition = response.headers.get("Content-Disposition");
-      let fileName = "見積書.docx";
+      let fileName = "受注書.xlsx";
       if (contentDisposition) {
         const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
         if (fileNameMatch && fileNameMatch[1]) {
@@ -128,8 +128,8 @@ export default function QuoteTemplateSelector({
       }
       onClose();
     } catch (err) {
-      console.error("見積書生成エラー:", err);
-      setError(err instanceof Error ? err.message : "見積書の生成に失敗しました");
+      console.error("受注書生成エラー:", err);
+      setError(err instanceof Error ? err.message : "受注書の生成に失敗しました");
     } finally {
       setIsGenerating(false);
     }
@@ -150,7 +150,7 @@ export default function QuoteTemplateSelector({
         <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           {/* ヘッダー */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">見積書印刷</h2>
+            <h2 className="text-xl font-semibold text-gray-900">受注書印刷</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -185,7 +185,7 @@ export default function QuoteTemplateSelector({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  <p className="text-lg font-medium text-gray-900">見積書を印刷中...</p>
+                  <p className="text-lg font-medium text-gray-900">受注書を印刷中...</p>
                   <p className="mt-2 text-sm text-gray-500">
                     しばらくお待ちください
                   </p>
@@ -306,7 +306,7 @@ export default function QuoteTemplateSelector({
                   生成中...
                 </>
               ) : (
-                "見積書を印刷"
+                "受注書を印刷"
               )}
             </button>
           </div>
@@ -315,3 +315,4 @@ export default function QuoteTemplateSelector({
     </div>
   );
 }
+

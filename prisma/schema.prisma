@@ -26,6 +26,7 @@ model User {
   projects         Project[]
   auditLogs        AuditLog[]
   documentTemplates DocumentTemplate[]
+  contracts       Contract[]
 
   @@map("users")
 }
@@ -94,7 +95,7 @@ model SalesOpportunity {
   // リレーション
   company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   quotes    SalesQuote[]
-  contract  Contract?
+  contracts Contract[]
   project   Project?
 
   @@map("sales_opportunities")
@@ -134,6 +135,12 @@ enum QuoteStatus {
   REJECTED   // 却下
 }
 
+enum ContractStatus {
+  DRAFT      // 下書き
+  CONFIRMED  // 確定
+  CANCELLED  // キャンセル
+}
+
 // 見積明細
 model SalesQuoteItem {
   id              String        @id @default(cuid())
@@ -158,20 +165,46 @@ model SalesQuoteItem {
 // 受注書（契約）
 model Contract {
   id                  String    @id @default(cuid())
-  salesOpportunityId  String    @unique // 営業案件と1:1
+  salesOpportunityId  String    // 営業案件と1:N
   salesQuoteId       String?   // 採用見積参照
-  contractNumber     String    @unique // 契約番号
+  contractNumber     String?   @unique // 契約番号（データベース側で自動採番）
   contractDate       DateTime  // 受注日
+  amount              Decimal   @db.Decimal(10, 2) // 金額（明細の合計金額）
   conditions         String?   // 契約条件
   documentPath       String?   // 帳票リンク（PDFパス等）
+  status              ContractStatus @default(DRAFT) // ステータス
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   // リレーション
   salesOpportunity SalesOpportunity @relation(fields: [salesOpportunityId], references: [id], onDelete: Cascade)
   salesQuote      SalesQuote?       @relation(fields: [salesQuoteId], references: [id], onDelete: SetNull)
+  items           ContractItem[]    // 受注明細
+  createdBy       User?             @relation(fields: [createdById], references: [id]) // 作成者
+  createdById     String?
 
   @@map("contracts")
+}
+
+// 受注明細
+model ContractItem {
+  id              String    @id @default(cuid())
+  contractId      String
+  itemNumber      Int           // 明細番号（表示順序）
+  description     String        // 明細内容・項目名
+  quantity        Decimal?      @db.Decimal(10, 2) // 数量
+  unitPrice       Decimal?      @db.Decimal(10, 2) // 単価
+  amount          Decimal       @db.Decimal(10, 2) // 金額（明細の小計）
+  notes           String?       // 備考
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // リレーション
+  contract        Contract      @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("contract_items")
+  @@unique([contractId, itemNumber])
+  @@index([contractId, itemNumber])
 }
 
 // プロジェクト

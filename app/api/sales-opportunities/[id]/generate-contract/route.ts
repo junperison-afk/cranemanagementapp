@@ -5,7 +5,7 @@ import Docxtemplater from "docxtemplater";
 import PizZip from "pizzip";
 import ExcelJS from "exceljs";
 
-// POST: 見積書生成
+// POST: 受注書生成
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -15,7 +15,7 @@ export async function POST(
 
     const body = await request.json();
     const templateId = body.templateId as string | undefined;
-    const quoteId = body.quoteId as string | undefined; // 見積ID（オプショナル）
+    const contractId = body.contractId as string | undefined; // 受注書ID（オプショナル）
 
     if (!templateId) {
       return NextResponse.json(
@@ -56,7 +56,7 @@ export async function POST(
         },
         _count: {
           select: {
-            quotes: true,
+            contracts: true,
           },
         },
       },
@@ -69,29 +69,36 @@ export async function POST(
       );
     }
 
-    // 見積データを取得（見積IDが指定されている場合）
-    let selectedQuote = null;
-    if (quoteId) {
-      selectedQuote = await prisma.salesQuote.findUnique({
-        where: { id: quoteId },
+    // 受注書データを取得（受注書IDが指定されている場合）
+    let selectedContract = null;
+    if (contractId) {
+      selectedContract = await prisma.contract.findUnique({
+        where: { id: contractId },
         include: {
           items: {
             orderBy: {
               itemNumber: "asc",
             },
           },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       });
 
-      if (!selectedQuote) {
+      if (!selectedContract) {
         return NextResponse.json(
-          { error: "見積が見つかりません" },
+          { error: "受注書が見つかりません" },
           { status: 404 }
         );
       }
 
       // 営業案件IDが一致するか確認
-      if (selectedQuote.salesOpportunityId !== params.id) {
+      if (selectedContract.salesOpportunityId !== params.id) {
         return NextResponse.json(
           { error: "営業案件が見つかりません" },
           { status: 404 }
@@ -103,7 +110,7 @@ export async function POST(
     const template = await prisma.documentTemplate.findFirst({
       where: {
         id: templateId,
-        templateType: "QUOTE",
+        templateType: "CONTRACT",
         isActive: true,
         OR: [
           { userId: session.user.id },
@@ -126,14 +133,6 @@ export async function POST(
       LOST: "失注",
     };
 
-    // 見積ステータスの日本語ラベル
-    const quoteStatusLabels: Record<string, string> = {
-      DRAFT: "下書き",
-      SENT: "送信済み",
-      ACCEPTED: "承認済み",
-      REJECTED: "却下",
-    };
-
     // プロジェクトステータスの日本語ラベル
     const projectStatusLabels: Record<string, string> = {
       PLANNING: "計画中",
@@ -147,23 +146,23 @@ export async function POST(
       ? new Date(salesOpportunity.occurredAt)
       : null;
 
-    // 見積データの日付
-    const quoteCreatedAtDate = selectedQuote
-      ? new Date(selectedQuote.createdAt)
+    // 受注書データの日付
+    const contractDate = selectedContract
+      ? new Date(selectedContract.contractDate)
       : null;
-    const quoteUpdatedAtDate = selectedQuote
-      ? new Date(selectedQuote.updatedAt)
+    const contractCreatedAtDate = selectedContract
+      ? new Date(selectedContract.createdAt)
       : null;
-    const quoteValidUntilDate = selectedQuote?.validUntil
-      ? new Date(selectedQuote.validUntil)
+    const contractUpdatedAtDate = selectedContract
+      ? new Date(selectedContract.updatedAt)
       : null;
 
-    // 見積明細を固定行数（最大10行）で準備
+    // 受注明細を固定行数（最大10行）で準備
     const maxItems = 10;
     const itemsData: Record<string, string | number> = {};
     
-    if (selectedQuote && selectedQuote.items) {
-      selectedQuote.items.slice(0, maxItems).forEach((item, index) => {
+    if (selectedContract && selectedContract.items) {
+      selectedContract.items.slice(0, maxItems).forEach((item, index) => {
         const num = index + 1;
         itemsData[`item${num}Number`] = item.itemNumber.toString();
         itemsData[`item${num}Description`] = item.description || "";
@@ -179,7 +178,7 @@ export async function POST(
     }
 
     // 残りの行は空文字列で埋める
-    for (let i = (selectedQuote?.items?.length || 0) + 1; i <= maxItems; i++) {
+    for (let i = (selectedContract?.items?.length || 0) + 1; i <= maxItems; i++) {
       itemsData[`item${i}Number`] = "";
       itemsData[`item${i}Description`] = "";
       itemsData[`item${i}Quantity`] = "";
@@ -191,8 +190,8 @@ export async function POST(
     }
 
     // 合計金額
-    const totalAmount = selectedQuote
-      ? selectedQuote.amount.toNumber()
+    const totalAmount = selectedContract
+      ? selectedContract.amount.toNumber()
       : 0;
 
     // テンプレートに差し込むデータを準備
@@ -204,7 +203,7 @@ export async function POST(
       companyPhone: salesOpportunity.company.phone || "",
       companyEmail: salesOpportunity.company.email || "",
       
-      // 営業案件情報（詳細画面の基本情報セクション）
+      // 営業案件情報
       opportunityTitle: salesOpportunity.title || "",
       status: salesOpportunity.status || "",
       statusLabel: statusLabels[salesOpportunity.status] || "",
@@ -221,50 +220,42 @@ export async function POST(
         ? occurredAtDate.toLocaleDateString("ja-JP")
         : "",
       
-      // 見積情報（見積IDが指定されている場合のみ）
-      quoteNumber: selectedQuote?.quoteNumber || "",
-      quoteAmount: selectedQuote
-        ? selectedQuote.amount.toNumber().toString()
+      // 受注書情報（受注書IDが指定されている場合のみ）
+      contractNumber: selectedContract?.contractNumber || "",
+      contractAmount: selectedContract
+        ? selectedContract.amount.toNumber().toString()
         : "",
-      quoteAmountFormatted: selectedQuote
-        ? `¥${selectedQuote.amount.toNumber().toLocaleString("ja-JP")}`
+      contractAmountFormatted: selectedContract
+        ? `¥${selectedContract.amount.toNumber().toLocaleString("ja-JP")}`
         : "",
-      quoteStatus: selectedQuote?.status || "",
-      quoteStatusLabel: selectedQuote?.status
-        ? quoteStatusLabels[selectedQuote.status] || ""
+      contractConditions: selectedContract?.conditions || "",
+      contractDate: contractDate
+        ? contractDate.toLocaleDateString("ja-JP")
         : "",
-      quoteConditions: selectedQuote?.conditions || "",
-      quoteValidUntil: quoteValidUntilDate
-        ? quoteValidUntilDate.toLocaleDateString("ja-JP")
+      contractCreatedAt: contractCreatedAtDate
+        ? contractCreatedAtDate.toLocaleDateString("ja-JP")
         : "",
-      quoteNotes: selectedQuote?.notes || "",
-      quoteCreatedAt: quoteCreatedAtDate
-        ? quoteCreatedAtDate.toLocaleDateString("ja-JP")
+      contractCreatedAtDateTime: contractCreatedAtDate
+        ? `${contractCreatedAtDate.toLocaleDateString("ja-JP")} ${contractCreatedAtDate.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}`
         : "",
-      quoteCreatedAtDateTime: quoteCreatedAtDate
-        ? `${quoteCreatedAtDate.toLocaleDateString("ja-JP")} ${quoteCreatedAtDate.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}`
+      contractUpdatedAt: contractUpdatedAtDate
+        ? contractUpdatedAtDate.toLocaleDateString("ja-JP")
         : "",
-      quoteUpdatedAt: quoteUpdatedAtDate
-        ? quoteUpdatedAtDate.toLocaleDateString("ja-JP")
+      contractUpdatedAtDateTime: contractUpdatedAtDate
+        ? `${contractUpdatedAtDate.toLocaleDateString("ja-JP")} ${contractUpdatedAtDate.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}`
         : "",
-      quoteUpdatedAtDateTime: quoteUpdatedAtDate
-        ? `${quoteUpdatedAtDate.toLocaleDateString("ja-JP")} ${quoteUpdatedAtDate.toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}`
-        : "",
+      contractCreatedBy: selectedContract?.createdBy?.name || selectedContract?.createdBy?.email || "",
       
-      // 見積明細（固定行数方式）
+      // 受注明細（固定行数方式）
       ...itemsData,
       
-      // 見積明細の合計情報
-      itemsCount: selectedQuote?.items?.length?.toString() || "0",
+      // 受注明細の合計情報
+      itemsCount: selectedContract?.items?.length?.toString() || "0",
       totalAmount: totalAmount.toString(),
       totalAmountFormatted: `¥${totalAmount.toLocaleString("ja-JP")}`,
       
-      // 関連情報（詳細画面の関連情報セクション）
-      quoteCount: salesOpportunity._count?.quotes?.toString() || "0",
-      contractNumber: salesOpportunity.contracts?.[0]?.contractNumber || "",
-      contractDate: salesOpportunity.contracts?.[0]?.contractDate
-        ? new Date(salesOpportunity.contracts[0].contractDate).toLocaleDateString("ja-JP")
-        : "",
+      // 関連情報
+      contractCount: salesOpportunity._count?.contracts?.toString() || "0",
       projectTitle: salesOpportunity.project?.title || "",
       projectStatus: salesOpportunity.project?.status || "",
       projectStatusLabel: salesOpportunity.project?.status
@@ -278,8 +269,6 @@ export async function POST(
 
     // Wordテンプレートを処理
     if (template.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
-      // テンプレートをバッファから読み込み（Bufferに明示的に変換）
-      // PrismaのBytes型をBufferに変換
       const fileBuffer: Buffer = Buffer.isBuffer(template.fileData) 
         ? template.fileData 
         : Buffer.from(new Uint8Array(template.fileData));
@@ -289,7 +278,6 @@ export async function POST(
         linebreaks: true,
       });
 
-      // データを差し込み
       try {
         doc.setData(templateData);
         doc.render();
@@ -301,53 +289,40 @@ export async function POST(
         );
       }
 
-      // 生成されたWordファイルを取得
       buffer = doc.getZip().generate({
         type: "nodebuffer",
         compression: "DEFLATE",
       });
 
-      fileName = `見積書_${salesOpportunity.company.name}_${new Date().toISOString().split("T")[0]}.docx`;
+      fileName = `受注書_${salesOpportunity.company.name}_${new Date().toISOString().split("T")[0]}.docx`;
       contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     }
     // Excelテンプレートを処理
     else if (template.mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") {
       const workbook = new ExcelJS.Workbook();
       
-      // テンプレートをバッファから読み込み
-      // PrismaのBytes型をBufferに変換（ExcelJSはBuffer型を期待）
-      // PrismaのBytes型は実際にはBufferとして扱われるため、Buffer.from()で変換
-      // instanceofチェックは型エラーになるため、常にUint8Array経由で変換
       const fileBuffer = Buffer.isBuffer(template.fileData)
         ? template.fileData
         : Buffer.from(new Uint8Array(template.fileData));
-      // ExcelJSのload()メソッドの型定義が厳密なため型アサーションを使用
       await workbook.xlsx.load(fileBuffer as any);
 
-      // すべてのワークシートを処理
       workbook.worksheets.forEach((worksheet) => {
-        // すべてのセルを走査してプレースホルダーを置換
         worksheet.eachRow({ includeEmpty: false }, (row) => {
           row.eachCell({ includeEmpty: false }, (cell) => {
             const cellValue = cell.value?.toString() || "";
             
-            // プレースホルダーを検索して置換
             if (cellValue.includes("{{")) {
               let newValue = cellValue;
               
-              // すべてのプレースホルダーを置換
               Object.entries(templateData).forEach(([key, value]) => {
                 const placeholder = `{{${key}}}`;
                 if (cellValue.includes(placeholder)) {
-                  // プレースホルダーを値に置換
                   newValue = newValue.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), String(value || ""));
                 }
               });
               
-              // セルの値を更新
               cell.value = newValue;
               
-              // 数値の場合、数値型に変換を試みる
               if (newValue.match(/^\d+$/)) {
                 const numValue = Number(newValue);
                 if (!isNaN(numValue)) {
@@ -359,10 +334,9 @@ export async function POST(
         });
       });
 
-      // Excelファイルをバッファに変換
       buffer = Buffer.from(await workbook.xlsx.writeBuffer());
 
-      fileName = `見積書_${salesOpportunity.company.name}_${new Date().toISOString().split("T")[0]}.xlsx`;
+      fileName = `受注書_${salesOpportunity.company.name}_${new Date().toISOString().split("T")[0]}.xlsx`;
       contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     } else {
       return NextResponse.json(
@@ -371,8 +345,6 @@ export async function POST(
       );
     }
 
-    // 生成されたファイルを返す
-    // BufferをUint8Arrayに変換してからNextResponseに渡す（型エラー回避のため）
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         "Content-Type": contentType,
@@ -380,10 +352,11 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error("見積書生成エラー:", error);
+    console.error("受注書生成エラー:", error);
     return NextResponse.json(
-      { error: "見積書の生成に失敗しました" },
+      { error: "受注書の生成に失敗しました" },
       { status: 500 }
     );
   }
 }
+

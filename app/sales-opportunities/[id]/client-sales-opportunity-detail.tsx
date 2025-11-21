@@ -12,6 +12,9 @@ import InlineEditLookup from "@/components/companies/inline-edit-lookup";
 import CompanyCreateForm from "@/components/companies/company-create-form";
 import QuoteCreateModal from "@/components/sales-opportunities/quote-create-modal";
 import QuoteDetailModal from "@/components/sales-opportunities/quote-detail-modal";
+import ContractCreateModal from "@/components/sales-opportunities/contract-create-modal";
+import ContractDetailModal from "@/components/sales-opportunities/contract-detail-modal";
+import ProjectCreateModal from "@/components/projects/project-create-modal";
 
 interface SalesOpportunity {
   id: string;
@@ -32,7 +35,7 @@ interface SalesOpportunity {
     email: string | null;
   };
   quotes: any[];
-  contract: any | null;
+  contracts: any[];
   project: {
     id: string;
     title: string;
@@ -40,6 +43,7 @@ interface SalesOpportunity {
   } | null;
   _count: {
     quotes: number;
+    contracts: number;
   };
 }
 
@@ -83,6 +87,9 @@ export default function ClientSalesOpportunityDetail({
   const [isSaving, setIsSaving] = useState(false);
   const [isQuoteCreateModalOpen, setIsQuoteCreateModalOpen] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
+  const [isContractCreateModalOpen, setIsContractCreateModalOpen] = useState(false);
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const [isProjectCreateModalOpen, setIsProjectCreateModalOpen] = useState(false);
 
   const updateSalesOpportunity = async (field: string, value: any) => {
     if (!canEdit) return;
@@ -111,7 +118,7 @@ export default function ClientSalesOpportunityDetail({
       setSalesOpportunity({
         ...updated,
         quotes: salesOpportunity.quotes,
-        contract: salesOpportunity.contract,
+        contracts: salesOpportunity.contracts,
         project: salesOpportunity.project,
         _count: salesOpportunity._count,
       });
@@ -140,9 +147,18 @@ export default function ClientSalesOpportunityDetail({
             <ArrowLeftIcon className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {salesOpportunity.title}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900">
+                {salesOpportunity.title}
+              </h1>
+              <span
+                className={`inline-flex px-3 py-0.5 text-sm font-semibold rounded-full ${
+                  statusColors[salesOpportunity.status]
+                }`}
+              >
+                {statusLabels[salesOpportunity.status]}
+              </span>
+            </div>
             <p className="mt-1 text-sm text-gray-500">
               <Link
                 href={`/companies/${salesOpportunity.company.id}`}
@@ -154,13 +170,6 @@ export default function ClientSalesOpportunityDetail({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-              statusColors[salesOpportunity.status]
-            }`}
-          >
-            {statusLabels[salesOpportunity.status]}
-          </span>
           {session?.user.role === "ADMIN" && (
             <DeleteItemButton
               apiPath="/api/sales-opportunities"
@@ -274,75 +283,151 @@ export default function ClientSalesOpportunityDetail({
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">
-              見積 ({salesOpportunity._count.quotes})
+              見積書 ({salesOpportunity._count.quotes})
             </h2>
             {canEdit && (
               <button
                 onClick={() => setIsQuoteCreateModalOpen(true)}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                + 追加
+                見積作成
               </button>
             )}
           </div>
           {salesOpportunity.quotes.length === 0 ? (
             <p className="text-sm text-gray-500">見積がありません</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {salesOpportunity.quotes.map((quote) => (
-                <div
+                <button
                   key={quote.id}
-                  className="border-b border-gray-200 pb-2 last:border-0 last:pb-0"
+                  onClick={() => setSelectedQuoteId(quote.id)}
+                  className="w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-md transition-colors"
                 >
-                  <button
-                    onClick={() => setSelectedQuoteId(quote.id)}
-                    className="text-sm text-blue-600 hover:text-blue-800"
-                  >
-                    {quote.quoteNumber} - ¥
-                    {quote.amount.toLocaleString()}
-                  </button>
-                </div>
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">作成日</p>
+                      <p className="text-gray-900 mt-1">
+                        {new Date(quote.createdAt).toLocaleDateString("ja-JP")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">見積番号</p>
+                      <p className="text-gray-900 mt-1">
+                        {quote.quoteNumber}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">金額</p>
+                      <p className="text-gray-900 mt-1">
+                        ¥{quote.amount.toLocaleString("ja-JP")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">ステータス</p>
+                      <p className="text-gray-900 mt-1">
+                        {quote.status === "DRAFT" && "下書き"}
+                        {quote.status === "SENT" && "送信済み"}
+                        {quote.status === "ACCEPTED" && "承認済み"}
+                        {quote.status === "REJECTED" && "却下"}
+                        {!["DRAFT", "SENT", "ACCEPTED", "REJECTED"].includes(quote.status) && quote.status}
+                      </p>
+                    </div>
+                  </div>
+                </button>
               ))}
             </div>
           )}
         </div>
 
-        {/* 契約・関連プロジェクト情報 */}
+        {/* 受注書情報 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            契約・関連プロジェクト
-          </h2>
-          {salesOpportunity.contract ? (
-            <div className="space-y-2">
-              <div>
-                <p className="text-sm text-gray-500">契約番号</p>
-                <p className="text-sm text-gray-900">
-                  {salesOpportunity.contract.contractNumber}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">契約日</p>
-                <p className="text-sm text-gray-900">
-                  {new Date(
-                    salesOpportunity.contract.contractDate
-                  ).toLocaleDateString("ja-JP")}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">契約情報がありません</p>
-          )}
-          {salesOpportunity.project && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <Link
-                href={`/projects/${salesOpportunity.project.id}`}
-                className="text-sm text-blue-600 hover:text-blue-800"
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              受注書 ({salesOpportunity._count?.contracts ?? salesOpportunity.contracts?.length ?? 0})
+            </h2>
+            {canEdit && (
+              <button
+                onClick={() => setIsContractCreateModalOpen(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                プロジェクト: {salesOpportunity.project.title}
-              </Link>
+                受注書作成
+              </button>
+            )}
+          </div>
+          {salesOpportunity.contracts.length === 0 ? (
+            <p className="text-sm text-gray-500">受注書情報がありません</p>
+          ) : (
+            <div className="space-y-3">
+              {salesOpportunity.contracts.map((contract) => (
+                <button
+                  key={contract.id}
+                  onClick={() => setSelectedContractId(contract.id)}
+                  className="w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-md transition-colors"
+                >
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">契約日</p>
+                      <p className="text-gray-900 mt-1">
+                        {new Date(contract.contractDate).toLocaleDateString("ja-JP")}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">契約番号</p>
+                      <p className="text-gray-900 mt-1">
+                        {contract.contractNumber}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">金額</p>
+                      <p className="text-gray-900 mt-1">
+                        {contract.amount
+                          ? `¥${contract.amount.toLocaleString("ja-JP")}`
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">ステータス</p>
+                      <p className="text-gray-900 mt-1">
+                        {contract.status === "DRAFT" && "下書き"}
+                        {contract.status === "CONFIRMED" && "確定"}
+                        {contract.status === "CANCELLED" && "キャンセル"}
+                        {!["DRAFT", "CONFIRMED", "CANCELLED"].includes(contract.status) && (contract.status || "-")}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
           )}
         </div>
+      </div>
+
+      {/* 関連プロジェクト情報 */}
+      <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            関連プロジェクト
+          </h2>
+          {canEdit && (
+            <button
+              onClick={() => setIsProjectCreateModalOpen(true)}
+              className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              この営業案件からプロジェクト作成
+            </button>
+          )}
+        </div>
+        {salesOpportunity.project ? (
+          <Link
+            href={`/projects/${salesOpportunity.project.id}`}
+            className="text-sm text-blue-600 hover:text-blue-800"
+          >
+            {salesOpportunity.project.title}
+          </Link>
+        ) : (
+          <p className="text-sm text-gray-500">関連プロジェクトがありません</p>
+        )}
       </div>
 
       {/* 見積作成モーダル */}
@@ -361,7 +446,7 @@ export default function ClientSalesOpportunityDetail({
               setSalesOpportunity({
                 ...updatedSalesOpportunity,
                 // 既存の関連データを保持
-                contract: salesOpportunity.contract,
+                contracts: salesOpportunity.contracts,
                 project: salesOpportunity.project,
               });
             }
@@ -391,7 +476,7 @@ export default function ClientSalesOpportunityDetail({
                 setSalesOpportunity({
                   ...updatedSalesOpportunity,
                   // 既存の関連データを保持
-                  contract: salesOpportunity.contract,
+                  contracts: salesOpportunity.contracts,
                   project: salesOpportunity.project,
                 });
               }
@@ -402,6 +487,92 @@ export default function ClientSalesOpportunityDetail({
           }}
         />
       )}
+
+      {/* 受注書作成モーダル */}
+      <ContractCreateModal
+        isOpen={isContractCreateModalOpen}
+        onClose={() => setIsContractCreateModalOpen(false)}
+        salesOpportunityId={salesOpportunity.id}
+        quotes={salesOpportunity.quotes}
+        onSuccess={async () => {
+          // 受注書作成後、営業案件データを再取得して即座に反映
+          try {
+            const response = await fetch(
+              `/api/sales-opportunities/${salesOpportunity.id}`
+            );
+            if (response.ok) {
+              const updatedSalesOpportunity = await response.json();
+              setSalesOpportunity({
+                ...updatedSalesOpportunity,
+                // 既存の関連データを保持
+                quotes: salesOpportunity.quotes,
+                project: salesOpportunity.project,
+              });
+            }
+          } catch (error) {
+            console.error("データ再取得エラー:", error);
+            router.refresh();
+          }
+        }}
+      />
+
+      {/* 受注書詳細モーダル */}
+      {selectedContractId && (
+        <ContractDetailModal
+          isOpen={!!selectedContractId}
+          onClose={() => setSelectedContractId(null)}
+          salesOpportunityId={salesOpportunity.id}
+          contractId={selectedContractId}
+          onSuccess={async () => {
+            // 受注書更新後、営業案件データを再取得して即座に反映
+            try {
+              const response = await fetch(
+                `/api/sales-opportunities/${salesOpportunity.id}`
+              );
+              if (response.ok) {
+                const updatedSalesOpportunity = await response.json();
+                setSalesOpportunity({
+                  ...updatedSalesOpportunity,
+                  // 既存の関連データを保持
+                  quotes: salesOpportunity.quotes,
+                  project: salesOpportunity.project,
+                });
+              }
+            } catch (error) {
+              console.error("データ再取得エラー:", error);
+              router.refresh();
+            }
+          }}
+        />
+      )}
+
+      {/* プロジェクト作成モーダル */}
+      <ProjectCreateModal
+        isOpen={isProjectCreateModalOpen}
+        onClose={() => setIsProjectCreateModalOpen(false)}
+        defaultCompanyId={salesOpportunity.company.id}
+        defaultSalesOpportunityId={salesOpportunity.id}
+        onSuccess={async () => {
+          // プロジェクト作成後、営業案件データを再取得して即座に反映
+          try {
+            const response = await fetch(
+              `/api/sales-opportunities/${salesOpportunity.id}`
+            );
+            if (response.ok) {
+              const updatedSalesOpportunity = await response.json();
+              setSalesOpportunity({
+                ...updatedSalesOpportunity,
+                // 既存の関連データを保持
+                quotes: salesOpportunity.quotes,
+                contracts: salesOpportunity.contracts,
+              });
+            }
+          } catch (error) {
+            console.error("データ再取得エラー:", error);
+            router.refresh();
+          }
+        }}
+      />
     </div>
   );
 }
