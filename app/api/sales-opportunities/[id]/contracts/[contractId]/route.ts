@@ -243,8 +243,10 @@ export async function PATCH(
 
     // 変更履歴を記録
     await createAuditLog("Contract", updatedContract.id, "UPDATE", {
-      salesOpportunityId: params.id,
-      contractNumber: updatedContract.contractNumber,
+      newValue: {
+        salesOpportunityId: params.id,
+        contractNumber: updatedContract.contractNumber,
+      },
     });
 
     // Decimal型をnumber型に変換

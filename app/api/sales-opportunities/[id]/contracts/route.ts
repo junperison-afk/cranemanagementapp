@@ -191,8 +191,10 @@ export async function POST(
 
     // 変更履歴を記録
     await createAuditLog("Contract", contract.id, "CREATE", {
-      salesOpportunityId: params.id,
-      contractNumber: contract.contractNumber,
+      newValue: {
+        salesOpportunityId: params.id,
+        contractNumber: contract.contractNumber,
+      },
     });
 
     return NextResponse.json(contractWithNumberAmount);
