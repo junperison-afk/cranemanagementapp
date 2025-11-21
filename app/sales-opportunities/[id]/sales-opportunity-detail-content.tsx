@@ -63,6 +63,7 @@ export default async function SalesOpportunityDetailContent({
       _count: {
         select: {
           quotes: true,
+          contracts: true,
         },
       },
     },
@@ -92,6 +93,17 @@ export default async function SalesOpportunityDetailContent({
         amount: item.amount.toNumber(),
       })),
     })),
+    contracts: salesOpportunity.contracts.map((contract) => ({
+      ...contract,
+      amount: contract.amount.toNumber(),
+      items: contract.items.map((item) => ({
+        ...item,
+        quantity: item.quantity?.toNumber() ?? null,
+        unitPrice: item.unitPrice?.toNumber() ?? null,
+        amount: item.amount.toNumber(),
+      })),
+    })),
+    _count: salesOpportunity._count,
   };
 
   return (
