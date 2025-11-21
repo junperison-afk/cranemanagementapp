@@ -42,6 +42,11 @@ interface Contract {
     amount: number;
     notes: string | null;
   }>;
+  createdBy: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
 }
 
 interface ContractEditFormProps {
