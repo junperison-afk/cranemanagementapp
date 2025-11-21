@@ -26,6 +26,7 @@ interface ProjectCreateFormProps {
   onSuccess: (id: string) => void;
   onCancel: () => void;
   defaultCompanyId?: string; // 初期値として設定する取引先ID
+  defaultSalesOpportunityId?: string; // 初期値として設定する営業案件ID
 }
 
 interface Company {
@@ -46,6 +47,7 @@ export default function ProjectCreateForm({
   onSuccess,
   onCancel,
   defaultCompanyId,
+  defaultSalesOpportunityId,
 }: ProjectCreateFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +63,7 @@ export default function ProjectCreateForm({
     defaultValues: {
       status: "PLANNING",
       companyId: defaultCompanyId || "",
+      salesOpportunityId: defaultSalesOpportunityId || "",
     },
   });
 
@@ -70,6 +73,13 @@ export default function ProjectCreateForm({
       setValue("companyId", defaultCompanyId, { shouldValidate: true });
     }
   }, [defaultCompanyId, setValue]);
+
+  // defaultSalesOpportunityIdが設定されている場合、初期値を設定
+  useEffect(() => {
+    if (defaultSalesOpportunityId) {
+      setValue("salesOpportunityId", defaultSalesOpportunityId, { shouldValidate: true });
+    }
+  }, [defaultSalesOpportunityId, setValue]);
 
   const selectedCompanyId = watch("companyId");
 
@@ -138,6 +148,10 @@ export default function ProjectCreateForm({
           <input
             type="hidden"
             {...register("companyId")}
+          />
+          <input
+            type="hidden"
+            {...register("salesOpportunityId")}
           />
         </div>
 
