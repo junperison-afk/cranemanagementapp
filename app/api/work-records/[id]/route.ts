@@ -9,12 +9,14 @@ const inspectionRecordUpdateSchema = z.object({
   userId: z.string().min(1).optional(),
   workType: z.enum(["INSPECTION", "REPAIR", "MAINTENANCE", "OTHER"]).optional(),
   inspectionDate: z.string().optional(),
-  overallJudgment: z.enum(["GOOD", "CAUTION", "BAD", "REPAIR"]).optional(),
-  findings: z.string().optional(),
-  summary: z.string().optional(),
-  additionalNotes: z.string().optional(),
+  overallJudgment: z.enum(["GOOD", "CAUTION", "BAD", "REPAIR"]).nullable().optional(),
+  findings: z.string().nullable().optional(),
+  summary: z.string().nullable().optional(),
+  additionalNotes: z.string().nullable().optional(),
   checklistData: z.string().optional(),
-  photos: z.string().optional(),
+  photos: z.string().nullable().optional(),
+  documentNumber: z.string().nullable().optional(),
+  installationFactory: z.string().nullable().optional(),
 });
 
 // GET: 作業記録詳細取得
@@ -42,6 +44,12 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
+              },
+            },
+            project: {
+              select: {
+                id: true,
+                title: true,
               },
             },
           },
@@ -94,6 +102,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    console.log("受信したデータ:", JSON.stringify(body, null, 2));
     const validatedData = inspectionRecordUpdateSchema.parse(body);
 
     // 既存データを取得（変更前の値を記録するため）
@@ -128,6 +137,10 @@ export async function PATCH(
     if (validatedData.checklistData !== undefined)
       updateData.checklistData = validatedData.checklistData;
     if (validatedData.photos !== undefined) updateData.photos = validatedData.photos;
+    if (validatedData.documentNumber !== undefined)
+      updateData.documentNumber = validatedData.documentNumber;
+    if (validatedData.installationFactory !== undefined)
+      updateData.installationFactory = validatedData.installationFactory;
 
     // 変更されたフィールドを特定
     const changes: Array<{
@@ -197,8 +210,16 @@ export async function PATCH(
     return NextResponse.json(inspectionRecord);
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("バリデーションエラー詳細:", error.errors);
       return NextResponse.json(
-        { error: "バリデーションエラー", details: error.errors },
+        { 
+          error: "バリデーションエラー", 
+          details: error.errors.map(e => ({
+            path: e.path.join("."),
+            message: e.message,
+            code: e.code
+          }))
+        },
         { status: 400 }
       );
     }
