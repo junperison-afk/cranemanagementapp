@@ -306,7 +306,7 @@ export default function ProjectDetailModal({
                       label="金額"
                       value={isEditing && editData ? (editData.amount?.toString() || "") : (project.amount?.toString() || "")}
                       onSave={(value) => handleEditFieldChange("amount", value ? parseFloat(value) : null)}
-                      type="number"
+                      formatNumber={true}
                       className={canEdit && isEditing ? "" : "pointer-events-none opacity-60"}
                     />
                     <InlineEditLookup
