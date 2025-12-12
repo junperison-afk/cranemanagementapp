@@ -49,7 +49,7 @@ export default function ContactDetailModal({
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 編集用の一時的な状態
-  const [editData, setEditData] = useState<Partial<Contact> | null>(null);
+  const [editData, setEditData] = useState<Partial<Contact> & { companyId?: string } | null>(null);
 
   // 連絡先データを取得
   useEffect(() => {
