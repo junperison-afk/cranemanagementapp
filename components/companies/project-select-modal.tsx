@@ -364,12 +364,12 @@ export default function ProjectSelectModal({
               <div className="flex-1 overflow-y-auto px-6 py-4">
                 <ProjectCreateForm
                   defaultCompanyId={companyId}
-                  onSuccess={async (project) => {
+                  onSuccess={async (projectId) => {
                     // プロジェクト作成後、一覧を再取得
                     await searchProjects();
                     setIsCreateModalOpen(false);
                     // 作成したプロジェクトを自動選択
-                    setSelectedProjectId(project.id);
+                    setSelectedProjectId(projectId);
                   }}
                   onCancel={() => setIsCreateModalOpen(false)}
                 />
