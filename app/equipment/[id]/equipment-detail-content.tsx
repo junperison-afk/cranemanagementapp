@@ -72,9 +72,12 @@ export default async function EquipmentDetailContent({
     ...equipment,
     project: equipment.project ? {
       ...equipment.project,
-      amount: equipment.project.amount && typeof equipment.project.amount.toNumber === 'function'
-        ? equipment.project.amount.toNumber()
-        : equipment.project.amount,
+      amount: equipment.project.amount !== null && typeof equipment.project.amount === 'object' && 'toNumber' in equipment.project.amount
+        ? (equipment.project.amount as any).toNumber()
+        : equipment.project.amount !== null
+        ? Number(equipment.project.amount)
+        : null,
+      status: String(equipment.project.status),
     } : null,
   };
 
