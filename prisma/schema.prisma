@@ -227,6 +227,7 @@ model Project {
   assignedUser    User?           @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
   salesOpportunity SalesOpportunity? @relation(fields: [salesOpportunityId], references: [id], onDelete: SetNull)
   equipment       Equipment[]
+  inspectionRecords InspectionRecord[]
 
   @@map("projects")
 }
@@ -262,22 +263,26 @@ model Equipment {
 
 // 点検記録（点検・修理・メンテナンスなどの作業記録を含む）
 model InspectionRecord {
-  id              String            @id @default(cuid())
-  equipmentId     String
-  userId          String            // 担当者
-  workType        WorkType          @default(INSPECTION) // 作業タイプ
-  inspectionDate  DateTime          // 作業日（点検日・修理日など）
-  overallJudgment InspectionJudgment? // 総合判定（点検の場合のみ）
-  findings        String?           // 所見
-  summary         String?           // 結果サマリ
-  additionalNotes String?           // 追加項目メモ
-  checklistData   String?           // チェックリストデータ（JSON形式）
-  photos          String?            // 写真パス（カンマ区切りまたはJSON）
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id                String            @id @default(cuid())
+  equipmentId       String
+  projectId         String?           // 関連プロジェクトID
+  userId            String            // 担当者
+  workType          WorkType          @default(INSPECTION) // 作業タイプ
+  inspectionDate    DateTime          // 作業日（点検日・修理日など）
+  overallJudgment   InspectionJudgment? // 総合判定（点検の場合のみ）
+  findings          String?           // 所見
+  summary           String?           // 結果サマリ
+  additionalNotes   String?           // 追加項目メモ（備考）
+  checklistData     String?           // チェックリストデータ（JSON形式）
+  photos            String?            // 写真パス（カンマ区切りまたはJSON）
+  documentNumber    String?           // 整理番号
+  installationFactory String?         // 設置工場
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   // リレーション
   equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  project   Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("inspection_records")

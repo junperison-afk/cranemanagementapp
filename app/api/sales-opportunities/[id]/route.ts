@@ -74,6 +74,16 @@ export async function GET(
             id: true,
             title: true,
             status: true,
+            startDate: true,
+            endDate: true,
+            amount: true,
+            assignedUser: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         _count: {
@@ -118,6 +128,14 @@ export async function GET(
           amount: item.amount.toNumber(),
         })),
       })),
+      project: salesOpportunity.project
+        ? {
+            ...salesOpportunity.project,
+            amount: salesOpportunity.project.amount
+              ? salesOpportunity.project.amount.toNumber()
+              : null,
+          }
+        : null,
       _count: salesOpportunity._count,
     };
 

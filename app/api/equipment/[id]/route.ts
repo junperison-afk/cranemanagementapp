@@ -6,7 +6,7 @@ import { createAuditLog } from "@/lib/audit-log";
 
 const equipmentUpdateSchema = z.object({
   companyId: z.string().min(1).optional(),
-  projectId: z.string().optional(),
+  projectId: z.string().nullable().optional(),
   name: z.string().min(1).optional(),
   model: z.string().optional(),
   serialNumber: z.string().optional(),
@@ -44,6 +44,9 @@ export async function GET(
             id: true,
             title: true,
             status: true,
+            startDate: true,
+            endDate: true,
+            amount: true,
           },
         },
         inspectionRecords: {
@@ -51,7 +54,10 @@ export async function GET(
           orderBy: {
             inspectionDate: "desc",
           },
-          include: {
+          select: {
+            id: true,
+            workType: true,
+            inspectionDate: true,
             user: {
               select: {
                 id: true,
@@ -76,7 +82,18 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(equipment);
+    // Decimal型をnumber型に変換
+    const response = {
+      ...equipment,
+      project: equipment.project ? {
+        ...equipment.project,
+        amount: equipment.project.amount && typeof equipment.project.amount.toNumber === 'function'
+          ? equipment.project.amount.toNumber()
+          : equipment.project.amount,
+      } : null,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("機器詳細取得エラー:", error);
     return NextResponse.json(

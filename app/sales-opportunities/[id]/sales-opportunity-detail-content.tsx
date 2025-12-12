@@ -58,6 +58,16 @@ export default async function SalesOpportunityDetailContent({
           id: true,
           title: true,
           status: true,
+          startDate: true,
+          endDate: true,
+          amount: true,
+          assignedUser: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
         },
       },
       _count: {
@@ -103,6 +113,14 @@ export default async function SalesOpportunityDetailContent({
         amount: item.amount.toNumber(),
       })),
     })),
+    project: salesOpportunity.project
+      ? {
+          ...salesOpportunity.project,
+          amount: salesOpportunity.project.amount
+            ? salesOpportunity.project.amount.toNumber()
+            : null,
+        }
+      : null,
     _count: salesOpportunity._count,
   };
 

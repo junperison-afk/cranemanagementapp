@@ -26,6 +26,16 @@ export default async function WorkRecordDetailContent({
               name: true,
             },
           },
+          project: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+              startDate: true,
+              endDate: true,
+              amount: true,
+            },
+          },
         },
       },
       user: {
@@ -47,9 +57,23 @@ export default async function WorkRecordDetailContent({
     );
   }
 
+  // Decimal型をnumber型に変換
+  const response = {
+    ...inspectionRecord,
+    equipment: {
+      ...inspectionRecord.equipment,
+      project: inspectionRecord.equipment.project ? {
+        ...inspectionRecord.equipment.project,
+        amount: inspectionRecord.equipment.project.amount && typeof inspectionRecord.equipment.project.amount.toNumber === 'function'
+          ? inspectionRecord.equipment.project.amount.toNumber()
+          : inspectionRecord.equipment.project.amount,
+      } : null,
+    },
+  };
+
   return (
     <ClientWorkRecordDetail
-      workRecord={inspectionRecord}
+      workRecord={response}
       canEdit={canEdit}
     />
   );

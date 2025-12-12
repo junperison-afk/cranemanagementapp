@@ -228,3 +228,57 @@ export async function PATCH(
   }
 }
 
+// DELETE: 見積削除
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string; quoteId: string } }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    // 編集者以上の権限が必要
+    if (session.user.role === "VIEWER") {
+      return NextResponse.json(
+        { error: "この操作を実行する権限がありません" },
+        { status: 403 }
+      );
+    }
+
+    // 見積の存在確認
+    const existingQuote = await prisma.salesQuote.findUnique({
+      where: { id: params.quoteId },
+    });
+
+    if (!existingQuote) {
+      return NextResponse.json(
+        { error: "見積が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    // 営業案件IDが一致するか確認
+    if (existingQuote.salesOpportunityId !== params.id) {
+      return NextResponse.json(
+        { error: "営業案件が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    // 見積を削除（明細も自動削除される）
+    await prisma.salesQuote.delete({
+      where: { id: params.quoteId },
+    });
+
+    return NextResponse.json({ message: "見積を削除しました" });
+  } catch (error) {
+    console.error("見積削除エラー:", error);
+    return NextResponse.json(
+      { error: "見積の削除に失敗しました" },
+      { status: 500 }
+    );
+  }
+}
+

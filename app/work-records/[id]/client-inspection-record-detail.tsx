@@ -8,6 +8,10 @@ import { useSession } from "next-auth/react";
 import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
+import ProjectDetailModal from "@/components/companies/project-detail-modal";
+import EquipmentDetailModal from "@/components/projects/equipment-detail-modal";
+import EquipmentSelectModal from "@/components/projects/equipment-select-modal";
+import ProjectSelectModal from "@/components/companies/project-select-modal";
 import HistoryTab from "@/components/common/history-tab";
 
 // 判定記号の定義
@@ -247,6 +251,10 @@ interface WorkRecord {
     project: {
       id: string;
       title: string;
+      status: string;
+      startDate: Date | null;
+      endDate: Date | null;
+      amount: number | null;
     } | null;
   };
   user: {
@@ -313,6 +321,10 @@ export default function ClientWorkRecordDetail({
   const [workRecord, setWorkRecord] = useState(initialWorkRecord);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "history">("overview");
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState<string | null>(null);
+  const [isEquipmentSelectModalOpen, setIsEquipmentSelectModalOpen] = useState(false);
+  const [isProjectSelectModalOpen, setIsProjectSelectModalOpen] = useState(false);
   
   // 点検結果データをパースして管理
   const [checklistData, setChecklistData] = useState<Record<string, Record<string, Record<string, string>>>>(() => {
@@ -526,13 +538,13 @@ export default function ClientWorkRecordDetail({
               )}{" "}
               の作業記録
             </h1>
-            <span
-              className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                workTypeColors[workRecord.workType]
-              }`}
-            >
-              {workTypeLabels[workRecord.workType]}
-            </span>
+          <span
+            className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
+              workTypeColors[workRecord.workType]
+            }`}
+          >
+            {workTypeLabels[workRecord.workType]}
+          </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -608,21 +620,6 @@ export default function ClientWorkRecordDetail({
               placeholder="日付を選択"
               className={canEdit ? "" : "pointer-events-none opacity-60"}
             />
-            {workRecord.equipment.project && (
-              <div>
-                <label className="block text-sm font-medium text-gray-500 mb-1">
-                  該当プロジェクト
-                </label>
-                <div className="text-sm text-gray-900">
-                  <Link
-                    href={`/projects/${workRecord.equipment.project.id}`}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {workRecord.equipment.project.title}
-                  </Link>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -631,18 +628,27 @@ export default function ClientWorkRecordDetail({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* 関連機器情報 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">関連機器情報</h2>
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">関連機器情報</h2>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsEquipmentSelectModalOpen(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                + 追加
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setSelectedEquipmentId(workRecord.equipment.id)}
+            className="w-full text-left bg-gray-50 rounded-lg border border-gray-200 p-4 hover:bg-gray-100 transition-colors"
+          >
             <div className="grid grid-cols-5 gap-4">
               <div className="flex flex-col">
                 <div className="text-xs font-medium text-gray-500 mb-1">関連機器名称</div>
-                <div className="text-sm text-gray-900">
-                  <Link
-                    href={`/equipment/${workRecord.equipment.id}`}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {workRecord.equipment.name}
-                  </Link>
+                <div className="text-sm text-gray-900 font-medium">
+                  {workRecord.equipment.name}
                 </div>
               </div>
               {workRecord.equipment.model && (
@@ -672,45 +678,84 @@ export default function ClientWorkRecordDetail({
               <div className="flex flex-col">
                 <div className="text-xs font-medium text-gray-500 mb-1">関連取引先</div>
                 <div className="text-sm text-gray-900">
-                  <Link
-                    href={`/companies/${workRecord.equipment.company.id}`}
-                    className="text-blue-600 hover:text-blue-800"
-                  >
-                    {workRecord.equipment.company.name}
-                  </Link>
+                  {workRecord.equipment.company.name}
                 </div>
               </div>
             </div>
-          </div>
+          </button>
         </div>
 
-        {/* 担当者情報 */}
+        {/* 関連プロジェクト情報 */}
         <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">担当者</h2>
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div className="flex flex-col">
-                <div className="text-xs font-medium text-gray-500 mb-1">氏名</div>
-                <div className="text-sm text-gray-900">
-                  {workRecord.user.name || "-"}
-                </div>
-              </div>
-              <div className="flex flex-col">
-                <div className="text-xs font-medium text-gray-500 mb-1">メール</div>
-                <div className="text-sm text-gray-900">
-                  {workRecord.user.email}
-                </div>
-              </div>
-              {workRecord.user.phone && (
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">関連プロジェクト</h2>
+            {canEdit && (
+              <button
+                type="button"
+                onClick={() => setIsProjectSelectModalOpen(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                + 追加
+              </button>
+            )}
+          </div>
+          {workRecord.equipment.project ? (
+            <button
+              onClick={() => setSelectedProjectId(workRecord.equipment.project!.id)}
+              className="w-full text-left bg-gray-50 rounded-lg border border-gray-200 p-4 hover:bg-gray-100 transition-colors"
+            >
+              <div className="grid grid-cols-5 gap-4">
                 <div className="flex flex-col">
-                  <div className="text-xs font-medium text-gray-500 mb-1">電話番号</div>
-                  <div className="text-sm text-gray-900">
-                    {workRecord.user.phone}
+                  <div className="text-xs font-medium text-gray-500 mb-1">プロジェクトタイトル</div>
+                  <div className="text-sm text-gray-900 font-medium">
+                    {workRecord.equipment.project.title}
                   </div>
                 </div>
-              )}
+                <div className="flex flex-col">
+                  <div className="text-xs font-medium text-gray-500 mb-1">開始日</div>
+                  <div className="text-sm text-gray-900">
+                    {workRecord.equipment.project.startDate
+                      ? new Date(workRecord.equipment.project.startDate).toLocaleDateString("ja-JP")
+                      : "-"}
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <div className="text-xs font-medium text-gray-500 mb-1">終了日</div>
+                  <div className="text-sm text-gray-900">
+                    {workRecord.equipment.project.endDate
+                      ? new Date(workRecord.equipment.project.endDate).toLocaleDateString("ja-JP")
+                      : "-"}
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <div className="text-xs font-medium text-gray-500 mb-1">金額</div>
+                  <div className="text-sm text-gray-900">
+                    {workRecord.equipment.project.amount
+                      ? `¥${workRecord.equipment.project.amount.toLocaleString("ja-JP")}`
+                      : "-"}
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <div className="text-xs font-medium text-gray-500 mb-1">ステータス</div>
+                  <div className="text-sm text-gray-900">
+                    {workRecord.equipment.project.status === "IN_PROGRESS"
+                      ? "進行中"
+                      : workRecord.equipment.project.status === "COMPLETED"
+                      ? "完了"
+                      : workRecord.equipment.project.status === "PLANNING"
+                      ? "計画中"
+                      : workRecord.equipment.project.status === "ON_HOLD"
+                      ? "保留"
+                      : workRecord.equipment.project.status}
+                  </div>
+                </div>
+              </div>
+            </button>
+          ) : (
+            <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+              <p className="text-sm text-gray-500">関連プロジェクトがありません</p>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -834,6 +879,97 @@ export default function ClientWorkRecordDetail({
       ) : (
         <HistoryTab entityType="WorkRecord" entityId={workRecord.id} />
       )}
+
+      {/* プロジェクト詳細モーダル */}
+      {selectedProjectId && (
+        <ProjectDetailModal
+          isOpen={!!selectedProjectId}
+          onClose={() => setSelectedProjectId(null)}
+          projectId={selectedProjectId}
+          canEdit={canEdit}
+          onUnlink={async () => {
+            // 作業記録詳細画面では関連外し機能は使用しない
+          }}
+        />
+      )}
+
+      {/* 機器詳細モーダル */}
+      {selectedEquipmentId && (
+        <EquipmentDetailModal
+          isOpen={!!selectedEquipmentId}
+          onClose={() => setSelectedEquipmentId(null)}
+          equipmentId={selectedEquipmentId}
+          canEdit={canEdit}
+          onUnlink={async () => {
+            // 作業記録詳細画面では関連外し機能は使用しない
+          }}
+        />
+      )}
+
+      {/* 機器選択モーダル */}
+      <EquipmentSelectModal
+        isOpen={isEquipmentSelectModalOpen}
+        onClose={() => setIsEquipmentSelectModalOpen(false)}
+        companyId={workRecord.equipment.company.id}
+        projectId={workRecord.equipment.project?.id || ""}
+        onSelect={async (equipmentList) => {
+          if (equipmentList.length === 0) return;
+          const selectedEquipment = equipmentList[0];
+          try {
+            const response = await fetch(`/api/work-records/${workRecord.id}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                equipmentId: selectedEquipment.id,
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error("機器の変更に失敗しました");
+            }
+
+            const updated = await response.json();
+            setWorkRecord(updated);
+            router.refresh();
+          } catch (error) {
+            console.error("機器変更エラー:", error);
+            alert("機器の変更に失敗しました");
+            throw error;
+          }
+        }}
+      />
+
+      {/* プロジェクト選択モーダル */}
+      <ProjectSelectModal
+        isOpen={isProjectSelectModalOpen}
+        onClose={() => setIsProjectSelectModalOpen(false)}
+        companyId={workRecord.equipment.company.id}
+        onSelect={async (projectId) => {
+          try {
+            const response = await fetch(`/api/equipment/${workRecord.equipment.id}`, {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                projectId: projectId,
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error("プロジェクトの関連付けに失敗しました");
+            }
+
+            router.refresh();
+          } catch (error) {
+            console.error("プロジェクト関連付けエラー:", error);
+            alert("プロジェクトの関連付けに失敗しました");
+            throw error;
+          }
+        }}
+      />
     </div>
   );
 }

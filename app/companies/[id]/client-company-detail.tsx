@@ -8,9 +8,14 @@ import { useSession } from "next-auth/react";
 import DeleteItemButton from "@/components/common/delete-item-button";
 import InlineEditField from "@/components/companies/inline-edit-field";
 import InlineEditSelect from "@/components/companies/inline-edit-select";
-import ContactCreateForm from "@/components/contacts/contact-create-form";
-import SalesOpportunityCreateForm from "@/components/sales-opportunities/sales-opportunity-create-form";
-import ProjectCreateForm from "@/components/projects/project-create-form";
+import ContactSelectModal from "@/components/projects/contact-select-modal";
+import ContactDetailModal from "@/components/projects/contact-detail-modal";
+import SalesOpportunitySelectModal from "@/components/projects/sales-opportunity-select-modal";
+import SalesOpportunityDetailModal from "@/components/projects/sales-opportunity-detail-modal";
+import ProjectSelectModal from "@/components/companies/project-select-modal";
+import ProjectDetailModal from "@/components/companies/project-detail-modal";
+import EquipmentDetailModal from "@/components/projects/equipment-detail-modal";
+import CompanyTimeline from "@/components/companies/company-timeline";
 import HistoryTab from "@/components/common/history-tab";
 
 interface Company {
@@ -24,6 +29,7 @@ interface Company {
   billingFlag: boolean;
   notes: string | null;
   updatedAt: Date;
+  createdAt: Date;
   contacts: any[];
   salesOpportunities: any[];
   equipment: any[];
@@ -56,9 +62,13 @@ export default function ClientCompanyDetail({
   const [company, setCompany] = useState(initialCompany);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "history">("overview");
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
-  const [isSalesOpportunityModalOpen, setIsSalesOpportunityModalOpen] = useState(false);
-  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isContactSelectModalOpen, setIsContactSelectModalOpen] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [isSalesOpportunitySelectModalOpen, setIsSalesOpportunitySelectModalOpen] = useState(false);
+  const [selectedSalesOpportunityId, setSelectedSalesOpportunityId] = useState<string | null>(null);
+  const [isProjectSelectModalOpen, setIsProjectSelectModalOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState<string | null>(null);
 
   const updateCompany = async (field: string, value: any) => {
     if (!canEdit) return;
@@ -102,67 +112,43 @@ export default function ClientCompanyDetail({
     await updateCompany(field, value);
   };
 
-  const handleContactCreateSuccess = (contact: any) => {
-    setIsContactModalOpen(false);
-    // 作成した連絡先を即座にローカル状態に追加（API呼び出し不要）
-    setCompany((prev) => ({
-      ...prev,
-      contacts: [contact, ...prev.contacts],
-      _count: prev._count
-        ? {
-            ...prev._count,
-            contacts: prev._count.contacts + 1,
-          }
-        : {
-            contacts: prev.contacts.length + 1,
-            salesOpportunities: prev.salesOpportunities.length,
-            equipment: prev.equipment.length,
-            projects: prev.projects.length,
-          },
-    }));
+  // 連絡先を関連付ける
+  const handleContactSelect = async (contactId: string) => {
+    // 連絡先は既にcompanyIdで関連付けられているため、追加の処理は不要
+    // データを再取得して反映
+    const companyResponse = await fetch(`/api/companies/${company.id}`);
+    if (companyResponse.ok) {
+      const updatedCompany = await companyResponse.json();
+      setCompany(updatedCompany);
+    } else {
+      router.refresh();
+    }
   };
 
-  const handleContactCreateCancel = () => {
-    setIsContactModalOpen(false);
+  // 営業案件を関連付ける
+  const handleSalesOpportunitySelect = async (salesOpportunityId: string) => {
+    // 営業案件は既にcompanyIdで関連付けられているため、追加の処理は不要
+    // データを再取得して反映
+    const companyResponse = await fetch(`/api/companies/${company.id}`);
+    if (companyResponse.ok) {
+      const updatedCompany = await companyResponse.json();
+      setCompany(updatedCompany);
+    } else {
+      router.refresh();
+    }
   };
 
-  const handleSalesOpportunityCreateSuccess = (salesOpportunity: any) => {
-    setIsSalesOpportunityModalOpen(false);
-    // 作成した営業案件を即座にローカル状態に追加（API呼び出し不要）
-    // _count.quotesを0として設定（新規作成なので見積は0件）
-    setCompany((prev) => ({
-      ...prev,
-      salesOpportunities: [
-        { ...salesOpportunity, _count: { quotes: 0 } },
-        ...prev.salesOpportunities,
-      ],
-      _count: prev._count
-        ? {
-            ...prev._count,
-            salesOpportunities: prev._count.salesOpportunities + 1,
-          }
-        : {
-            contacts: prev.contacts.length,
-            salesOpportunities: prev.salesOpportunities.length + 1,
-            equipment: prev.equipment.length,
-            projects: prev.projects.length,
-          },
-    }));
-  };
-
-  const handleSalesOpportunityCreateCancel = () => {
-    setIsSalesOpportunityModalOpen(false);
-  };
-
-  const handleProjectCreateSuccess = (projectId: string) => {
-    setIsProjectModalOpen(false);
-    // 作成したプロジェクトの詳細画面に遷移
-    router.push(`/projects/${projectId}`);
-    router.refresh();
-  };
-
-  const handleProjectCreateCancel = () => {
-    setIsProjectModalOpen(false);
+  // プロジェクトを関連付ける
+  const handleProjectSelect = async (projectId: string) => {
+    // プロジェクトは既にcompanyIdで関連付けられているため、追加の処理は不要
+    // データを再取得して反映
+    const companyResponse = await fetch(`/api/companies/${company.id}`);
+    if (companyResponse.ok) {
+      const updatedCompany = await companyResponse.json();
+      setCompany(updatedCompany);
+    } else {
+      router.refresh();
+    }
   };
 
   return (
@@ -212,7 +198,7 @@ export default function ClientCompanyDetail({
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            概要
+            内容
           </button>
           <button
             onClick={() => setActiveTab("history")}
@@ -222,13 +208,29 @@ export default function ClientCompanyDetail({
                 : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
             }`}
           >
-            履歴
+            編集履歴
           </button>
         </nav>
       </div>
 
       {activeTab === "overview" ? (
         <>
+          {/* タイムライン */}
+          <CompanyTimeline
+            companyCreatedAt={company.createdAt}
+            salesOpportunities={company.salesOpportunities.map((so) => ({
+              id: so.id,
+              title: so.title,
+              createdAt: so.createdAt,
+            }))}
+            projects={company.projects.map((project) => ({
+              id: project.id,
+              title: project.title,
+              startDate: project.startDate,
+              endDate: project.endDate,
+            }))}
+          />
+
           {/* 基本情報 */}
       <div className="bg-white shadow-sm rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -384,8 +386,8 @@ export default function ClientCompanyDetail({
             {canEdit && (
               <button
                 type="button"
-                onClick={() => setIsContactModalOpen(true)}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                onClick={() => setIsContactSelectModalOpen(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 + 追加
               </button>
@@ -398,21 +400,38 @@ export default function ClientCompanyDetail({
           ) : (
             <div className="space-y-3">
               {company.contacts.map((contact) => (
-                <div
+                <button
                   key={contact.id}
-                  className="border-b border-gray-100 pb-3 last:border-0"
+                  onClick={() => setSelectedContactId(contact.id)}
+                  className="block w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-md transition-colors"
                 >
-                  <p className="font-medium text-gray-900">{contact.name}</p>
-                  {contact.position && (
-                    <p className="text-sm text-gray-500">{contact.position}</p>
-                  )}
-                  {contact.phone && (
-                    <p className="text-sm text-gray-500">{contact.phone}</p>
-                  )}
-                  {contact.email && (
-                    <p className="text-sm text-gray-500">{contact.email}</p>
-                  )}
-                </div>
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">氏名</p>
+                      <p className="text-gray-900 mt-1 font-medium">
+                        {contact.name || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">役職</p>
+                      <p className="text-gray-900 mt-1">
+                        {contact.position || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">電話</p>
+                      <p className="text-gray-900 mt-1">
+                        {contact.phone || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">メール</p>
+                      <p className="text-gray-900 mt-1">
+                        {contact.email || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </button>
               ))}
             </div>
           )}
@@ -427,8 +446,8 @@ export default function ClientCompanyDetail({
             {canEdit && (
               <button
                 type="button"
-                onClick={() => setIsSalesOpportunityModalOpen(true)}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                onClick={() => setIsSalesOpportunitySelectModalOpen(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 + 追加
               </button>
@@ -441,35 +460,48 @@ export default function ClientCompanyDetail({
           ) : (
             <div className="space-y-3">
               {company.salesOpportunities.map((opportunity) => (
-                <Link
+                <button
                   key={opportunity.id}
-                  href={`/sales-opportunities/${opportunity.id}`}
-                  className="block border-b border-gray-100 pb-3 last:border-0 hover:bg-gray-50 -mx-3 px-3 rounded"
+                  onClick={() => setSelectedSalesOpportunityId(opportunity.id)}
+                  className="block w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-md transition-colors"
                 >
-                  <p className="font-medium text-gray-900">
-                    {opportunity.title}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        opportunity.status === "WON"
-                          ? "bg-green-100 text-green-800"
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">発生日</p>
+                      <p className="text-gray-900 mt-1">
+                        {opportunity.occurredAt
+                          ? new Date(opportunity.occurredAt).toLocaleDateString("ja-JP")
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">見積金額</p>
+                      <p className="text-gray-900 mt-1">
+                        {opportunity.estimatedAmount
+                          ? `¥${opportunity.estimatedAmount.toLocaleString("ja-JP")}`
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">ステータス</p>
+                      <p className="text-gray-900 mt-1">
+                        {opportunity.status === "ESTIMATING"
+                          ? "見積中"
+                          : opportunity.status === "WON"
+                          ? "受注"
                           : opportunity.status === "LOST"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {opportunity.status === "WON"
-                        ? "受注"
-                        : opportunity.status === "LOST"
-                        ? "失注"
-                        : "見積中"}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      見積: {opportunity._count.quotes}件
-                    </span>
+                          ? "失注"
+                          : opportunity.status}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">案件タイトル</p>
+                      <p className="text-gray-900 mt-1 font-medium">
+                        {opportunity.title}
+                      </p>
+                    </div>
                   </div>
-                </Link>
+                </button>
               ))}
             </div>
           )}
@@ -483,8 +515,8 @@ export default function ClientCompanyDetail({
             </h2>
             {canEdit && (
               <button
-                onClick={() => setIsProjectModalOpen(true)}
-                className="text-sm text-blue-600 hover:text-blue-800"
+                onClick={() => setIsProjectSelectModalOpen(true)}
+                className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 + 追加
               </button>
@@ -497,41 +529,58 @@ export default function ClientCompanyDetail({
           ) : (
             <div className="space-y-3">
               {company.projects.map((project) => (
-                <Link
+                <button
                   key={project.id}
-                  href={`/projects/${project.id}`}
-                  className="block border-b border-gray-100 pb-3 last:border-0 hover:bg-gray-50 -mx-3 px-3 rounded"
+                  onClick={() => setSelectedProjectId(project.id)}
+                  className="block w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-md transition-colors"
                 >
-                  <p className="font-medium text-gray-900">{project.title}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        project.status === "IN_PROGRESS"
-                          ? "bg-blue-100 text-blue-800"
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">開始日</p>
+                      <p className="text-gray-900 mt-1">
+                        {project.startDate
+                          ? new Date(project.startDate).toLocaleDateString("ja-JP")
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">終了日</p>
+                      <p className="text-gray-900 mt-1">
+                        {project.endDate
+                          ? new Date(project.endDate).toLocaleDateString("ja-JP")
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">金額</p>
+                      <p className="text-gray-900 mt-1">
+                        {project.amount
+                          ? `¥${project.amount.toLocaleString("ja-JP")}`
+                          : "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">ステータス</p>
+                      <p className="text-gray-900 mt-1 font-medium">
+                        {project.status === "IN_PROGRESS"
+                          ? "進行中"
                           : project.status === "COMPLETED"
-                          ? "bg-green-100 text-green-800"
+                          ? "完了"
+                          : project.status === "PLANNING"
+                          ? "計画中"
                           : project.status === "ON_HOLD"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {project.status === "IN_PROGRESS"
-                        ? "進行中"
-                        : project.status === "COMPLETED"
-                        ? "完了"
-                        : project.status === "PLANNING"
-                        ? "計画中"
-                        : project.status === "ON_HOLD"
-                        ? "保留"
-                        : project.status}
-                    </span>
-                    {project.assignedUser && (
-                      <span className="text-xs text-gray-500">
-                        {project.assignedUser.name || project.assignedUser.email}
-                      </span>
-                    )}
+                          ? "保留"
+                          : project.status}
+                      </p>
+                    </div>
                   </div>
-                </Link>
+                  <div className="mt-2">
+                    <p className="text-gray-500 text-sm">プロジェクトタイトル</p>
+                    <p className="text-gray-900 mt-1 font-medium">
+                      {project.title}
+                    </p>
+                  </div>
+                </button>
               ))}
             </div>
           )}
@@ -544,12 +593,15 @@ export default function ClientCompanyDetail({
               関連機器 ({company._count?.equipment ?? company.equipment.length})
             </h2>
             {canEdit && (
-              <Link
-                href={`/equipment/new?companyId=${company.id}`}
-                className="text-sm text-blue-600 hover:text-blue-800"
+              <button
+                onClick={() => {
+                  // 機器追加モーダルを開く（今後実装予定）
+                  router.push(`/equipment/new?companyId=${company.id}`);
+                }}
+                className="inline-flex items-center px-3 py-1.5 border border-blue-600 text-sm font-bold text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 + 追加
-              </Link>
+              </button>
             )}
           </div>
           {company.equipment.length === 0 ? (
@@ -557,21 +609,38 @@ export default function ClientCompanyDetail({
           ) : (
             <div className="space-y-3">
               {company.equipment.map((equipment) => (
-                <Link
+                <button
                   key={equipment.id}
-                  href={`/equipment/${equipment.id}`}
-                  className="block border-b border-gray-100 pb-3 last:border-0 hover:bg-gray-50 -mx-3 px-3 rounded"
+                  onClick={() => setSelectedEquipmentId(equipment.id)}
+                  className="block w-full text-left bg-gray-50 hover:bg-gray-100 p-3 rounded-md transition-colors"
                 >
-                  <p className="font-medium text-gray-900">{equipment.name}</p>
-                  {equipment.model && (
-                    <p className="text-sm text-gray-500">{equipment.model}</p>
-                  )}
-                  {equipment.location && (
-                    <p className="text-sm text-gray-500">
-                      設置場所: {equipment.location}
-                    </p>
-                  )}
-                </Link>
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">機器名</p>
+                      <p className="text-gray-900 mt-1 font-medium">
+                        {equipment.name || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">機種</p>
+                      <p className="text-gray-900 mt-1">
+                        {equipment.model || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">製造番号</p>
+                      <p className="text-gray-900 mt-1">
+                        {equipment.serialNumber || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">設置場所</p>
+                      <p className="text-gray-900 mt-1">
+                        {equipment.location || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </button>
               ))}
             </div>
           )}
@@ -582,352 +651,176 @@ export default function ClientCompanyDetail({
         <HistoryTab entityType="Company" entityId={company.id} />
       )}
 
-      {/* 連絡先新規作成モーダル */}
-      {isContactModalOpen && (
-        <ContactCreateModal
-          title="連絡先を新規作成"
-          companyId={company.id}
-          onClose={handleContactCreateCancel}
-          onSuccess={handleContactCreateSuccess}
+      {/* 連絡先選択モーダル */}
+      <ContactSelectModal
+        isOpen={isContactSelectModalOpen}
+        onClose={() => setIsContactSelectModalOpen(false)}
+        companyId={company.id}
+        onSelect={handleContactSelect}
+      />
+
+      {/* 連絡先詳細モーダル */}
+      {selectedContactId && (
+        <ContactDetailModal
+          isOpen={!!selectedContactId}
+          onClose={() => setSelectedContactId(null)}
+          contactId={selectedContactId}
+          canEdit={canEdit}
+          onUnlink={async () => {
+            // 取引先詳細画面では、連絡先を削除する
+            try {
+              const response = await fetch(`/api/contacts/${selectedContactId}`, {
+                method: "DELETE",
+              });
+
+              if (!response.ok) {
+                throw new Error("連絡先の削除に失敗しました");
+              }
+
+              // 取引先データを再取得
+              const companyResponse = await fetch(`/api/companies/${company.id}`);
+              if (companyResponse.ok) {
+                const updatedCompany = await companyResponse.json();
+                setCompany(updatedCompany);
+              } else {
+                router.refresh();
+              }
+            } catch (error) {
+              console.error("連絡先削除エラー:", error);
+              throw error;
+            }
+          }}
         />
       )}
 
-      {/* 営業案件新規作成モーダル */}
-      {isSalesOpportunityModalOpen && (
-        <SalesOpportunityCreateModal
-          title="営業案件を新規作成"
-          companyId={company.id}
-          onClose={handleSalesOpportunityCreateCancel}
-          onSuccess={handleSalesOpportunityCreateSuccess}
+      {/* 営業案件詳細モーダル */}
+      {selectedSalesOpportunityId && (
+        <SalesOpportunityDetailModal
+          isOpen={!!selectedSalesOpportunityId}
+          onClose={() => setSelectedSalesOpportunityId(null)}
+          salesOpportunityId={selectedSalesOpportunityId}
+          canEdit={canEdit}
+          onUnlink={async () => {
+            // 取引先詳細画面では、営業案件のcompanyIdを変更する（削除ではなく）
+            // ただし、営業案件は必ず取引先に紐付いているため、関連から外す操作は実質的に削除になる
+            try {
+              const response = await fetch(`/api/sales-opportunities/${selectedSalesOpportunityId}`, {
+                method: "DELETE",
+              });
+
+              if (!response.ok) {
+                throw new Error("営業案件の削除に失敗しました");
+              }
+
+              // 取引先データを再取得
+              const companyResponse = await fetch(`/api/companies/${company.id}`);
+              if (companyResponse.ok) {
+                const updatedCompany = await companyResponse.json();
+                setCompany(updatedCompany);
+              } else {
+                router.refresh();
+              }
+            } catch (error) {
+              console.error("営業案件削除エラー:", error);
+              throw error;
+            }
+          }}
         />
       )}
 
-      {/* プロジェクト新規作成モーダル */}
-      {isProjectModalOpen && (
-        <ProjectCreateModal
-          title="プロジェクトを新規作成"
-          companyId={company.id}
-          onClose={handleProjectCreateCancel}
-          onSuccess={handleProjectCreateSuccess}
+      {/* プロジェクト詳細モーダル */}
+      {selectedProjectId && (
+        <ProjectDetailModal
+          isOpen={!!selectedProjectId}
+          onClose={() => setSelectedProjectId(null)}
+          projectId={selectedProjectId}
+          canEdit={canEdit}
+          onUnlink={async () => {
+            // 取引先詳細画面では、プロジェクトのcompanyIdを変更する（削除ではなく）
+            // ただし、プロジェクトは必ず取引先に紐付いているため、関連から外す操作は実質的に削除になる
+            try {
+              const response = await fetch(`/api/projects/${selectedProjectId}`, {
+                method: "DELETE",
+              });
+
+              if (!response.ok) {
+                throw new Error("プロジェクトの削除に失敗しました");
+              }
+
+              // 取引先データを再取得
+              const companyResponse = await fetch(`/api/companies/${company.id}`);
+              if (companyResponse.ok) {
+                const updatedCompany = await companyResponse.json();
+                setCompany(updatedCompany);
+              } else {
+                router.refresh();
+              }
+            } catch (error) {
+              console.error("プロジェクト削除エラー:", error);
+              throw error;
+            }
+          }}
         />
       )}
-    </div>
-  );
-}
 
-/**
- * 連絡先新規作成モーダルコンポーネント
- */
-interface ContactCreateModalProps {
-  title: string;
-  companyId: string;
-  onClose: () => void;
-  onSuccess: (contact: any) => void;
-}
+      {/* 機器詳細モーダル */}
+      {selectedEquipmentId && (
+        <EquipmentDetailModal
+          isOpen={!!selectedEquipmentId}
+          onClose={() => setSelectedEquipmentId(null)}
+          equipmentId={selectedEquipmentId}
+          canEdit={canEdit}
+          onUnlink={async () => {
+            // 取引先詳細画面では、機器のcompanyIdを変更する（削除ではなく）
+            try {
+              const response = await fetch(`/api/equipment/${selectedEquipmentId}`, {
+                method: "PATCH",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  companyId: null,
+                }),
+              });
 
-function ContactCreateModal({
-  title,
-  companyId,
-  onClose,
-  onSuccess,
-}: ContactCreateModalProps) {
-  // ESCキーでモーダルを閉じる
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
+              if (!response.ok) {
+                throw new Error("機器の関連外しに失敗しました");
+              }
 
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [onClose]);
+              // 取引先データを再取得
+              const companyResponse = await fetch(`/api/companies/${company.id}`);
+              if (companyResponse.ok) {
+                const updatedCompany = await companyResponse.json();
+                setCompany(updatedCompany);
+              } else {
+                router.refresh();
+              }
+            } catch (error) {
+              console.error("機器関連外しエラー:", error);
+              throw error;
+            }
+          }}
+        />
+      )}
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* オーバーレイ */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+      {/* 営業案件選択モーダル */}
+      <SalesOpportunitySelectModal
+        isOpen={isSalesOpportunitySelectModalOpen}
+        onClose={() => setIsSalesOpportunitySelectModalOpen(false)}
+        companyId={company.id}
+        currentProjectId={""} // 取引先詳細画面ではプロジェクトIDは不要
+        onSelect={handleSalesOpportunitySelect}
       />
 
-      {/* モーダル */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div
-          className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* ヘッダー */}
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-            >
-              <span className="sr-only">閉じる</span>
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* コンテンツ */}
-          <div className="px-6 py-4">
-            <ContactCreateFormWithCompanyId
-              companyId={companyId}
-              onSuccess={onSuccess}
-              onCancel={onClose}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * 取引先IDが事前に設定された連絡先作成フォーム
- */
-interface ContactCreateFormWithCompanyIdProps {
-  companyId: string;
-  onSuccess: (contact: any) => void;
-  onCancel: () => void;
-}
-
-function ContactCreateFormWithCompanyId({
-  companyId,
-  onSuccess,
-  onCancel,
-}: ContactCreateFormWithCompanyIdProps) {
-  return (
-    <ContactCreateForm
-      onSuccess={onSuccess}
-      onCancel={onCancel}
-      defaultCompanyId={companyId}
-    />
-  );
-}
-
-/**
- * 営業案件新規作成モーダルコンポーネント
- */
-interface SalesOpportunityCreateModalProps {
-  title: string;
-  companyId: string;
-  onClose: () => void;
-  onSuccess: (salesOpportunity: any) => void;
-}
-
-function SalesOpportunityCreateModal({
-  title,
-  companyId,
-  onClose,
-  onSuccess,
-}: SalesOpportunityCreateModalProps) {
-  // ESCキーでモーダルを閉じる
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* オーバーレイ */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+      {/* プロジェクト選択モーダル */}
+      <ProjectSelectModal
+        isOpen={isProjectSelectModalOpen}
+        onClose={() => setIsProjectSelectModalOpen(false)}
+        companyId={company.id}
+        onSelect={handleProjectSelect}
       />
-
-      {/* モーダル */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div
-          className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* ヘッダー */}
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-            >
-              <span className="sr-only">閉じる</span>
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* コンテンツ */}
-          <div className="px-6 py-4">
-            <SalesOpportunityCreateFormWithCompanyId
-              companyId={companyId}
-              onSuccess={onSuccess}
-              onCancel={onClose}
-            />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
 
-/**
- * 取引先IDが事前に設定された営業案件作成フォーム
- */
-interface SalesOpportunityCreateFormWithCompanyIdProps {
-  companyId: string;
-  onSuccess: (salesOpportunity: any) => void;
-  onCancel: () => void;
-}
-
-function SalesOpportunityCreateFormWithCompanyId({
-  companyId,
-  onSuccess,
-  onCancel,
-}: SalesOpportunityCreateFormWithCompanyIdProps) {
-  return (
-    <SalesOpportunityCreateForm
-      onSuccess={onSuccess}
-      onCancel={onCancel}
-      defaultCompanyId={companyId}
-    />
-  );
-}
-
-/**
- * プロジェクト新規作成モーダルコンポーネント
- */
-interface ProjectCreateModalProps {
-  title: string;
-  companyId: string;
-  onClose: () => void;
-  onSuccess: (projectId: string) => void;
-}
-
-function ProjectCreateModal({
-  title,
-  companyId,
-  onClose,
-  onSuccess,
-}: ProjectCreateModalProps) {
-  // ESCキーでモーダルを閉じる
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* オーバーレイ */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-      />
-
-      {/* モーダル */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div
-          className="relative w-full max-w-2xl transform overflow-hidden rounded-lg bg-white shadow-xl transition-all"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* ヘッダー */}
-          <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-            >
-              <span className="sr-only">閉じる</span>
-              <svg
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* コンテンツ */}
-          <div className="px-6 py-4">
-            <ProjectCreateFormWithCompanyId
-              companyId={companyId}
-              onSuccess={onSuccess}
-              onCancel={onClose}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * 取引先IDが事前に設定されたプロジェクト作成フォーム
- */
-interface ProjectCreateFormWithCompanyIdProps {
-  companyId: string;
-  onSuccess: (projectId: string) => void;
-  onCancel: () => void;
-}
-
-function ProjectCreateFormWithCompanyId({
-  companyId,
-  onSuccess,
-  onCancel,
-}: ProjectCreateFormWithCompanyIdProps) {
-  const handleSuccess = (projectId: string) => {
-    onSuccess(projectId);
-  };
-
-  return (
-    <ProjectCreateForm
-      onSuccess={handleSuccess}
-      onCancel={onCancel}
-      defaultCompanyId={companyId}
-    />
-  );
-}
 

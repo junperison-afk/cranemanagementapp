@@ -15,6 +15,8 @@ const inspectionRecordSchema = z.object({
   additionalNotes: z.string().optional(),
   checklistData: z.string().optional(),
   photos: z.string().optional(),
+  documentNumber: z.string().optional(),
+  installationFactory: z.string().optional(),
 });
 
 // GET: 作業記録一覧取得
@@ -192,9 +194,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = inspectionRecordSchema.parse(body);
 
+    // 機器のプロジェクトIDを取得
+    const equipment = await prisma.equipment.findUnique({
+      where: { id: validatedData.equipmentId },
+      select: { projectId: true },
+    });
+
     const inspectionRecord = await prisma.inspectionRecord.create({
       data: {
         equipmentId: validatedData.equipmentId,
+        projectId: equipment?.projectId || null,
         userId: validatedData.userId,
         workType: validatedData.workType || "INSPECTION",
         inspectionDate: new Date(validatedData.inspectionDate),
@@ -204,6 +213,8 @@ export async function POST(request: NextRequest) {
         additionalNotes: validatedData.additionalNotes,
         checklistData: validatedData.checklistData,
         photos: validatedData.photos,
+        documentNumber: validatedData.documentNumber,
+        installationFactory: validatedData.installationFactory,
       },
       include: {
         equipment: {
@@ -237,8 +248,16 @@ export async function POST(request: NextRequest) {
       );
     }
     console.error("作業記録作成エラー:", error);
+    // エラーの詳細をログに出力
+    if (error instanceof Error) {
+      console.error("エラーメッセージ:", error.message);
+      console.error("エラースタック:", error.stack);
+    }
     return NextResponse.json(
-      { error: "作業記録の作成に失敗しました" },
+      { 
+        error: "作業記録の作成に失敗しました",
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

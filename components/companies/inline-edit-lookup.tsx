@@ -24,6 +24,8 @@ interface InlineEditLookupProps {
     onSuccess: (id: string) => void;
     onCancel: () => void;
   }>; // 新規作成フォームコンポーネント
+  hideLabel?: boolean; // ラベルを非表示にするかどうか
+  hideEditButton?: boolean; // 編集ボタンを非表示にするかどうか
 }
 
 /**
@@ -45,6 +47,8 @@ export default function InlineEditLookup({
   returnUrl,
   canEdit = true,
   createFormComponent,
+  hideLabel = false,
+  hideEditButton = false,
 }: InlineEditLookupProps) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -199,29 +203,31 @@ export default function InlineEditLookup({
     <div
       className={`group ${className}`}
     >
-      <div className="flex items-center justify-between mb-1">
-        <label className="block text-sm font-medium text-gray-500">
-          {label}
-        </label>
-        <div className="flex items-center gap-2">
-          {createNewUrl && canEdit && (
-            <button
-              type="button"
-              onClick={handleCreateClick}
-              className="text-sm text-blue-600 hover:text-blue-800 opacity-0 group-hover:opacity-100 transition-opacity"
-              title="新規作成"
-            >
-              + 追加
-            </button>
-          )}
-          {canEdit && (
-            <PencilIcon 
-              className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" 
-              onClick={() => setIsEditing(true)}
-            />
-          )}
+      {!hideLabel && (
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium text-gray-500">
+            {label}
+          </label>
+          <div className="flex items-center gap-2">
+            {createNewUrl && canEdit && (
+              <button
+                type="button"
+                onClick={handleCreateClick}
+                className="text-sm text-blue-600 hover:text-blue-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="新規作成"
+              >
+                + 追加
+              </button>
+            )}
+            {canEdit && !hideEditButton && (
+              <PencilIcon 
+                className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" 
+                onClick={() => setIsEditing(true)}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
       <div 
         className={`mt-1 px-3 py-2 rounded-md border border-transparent group-hover:border-gray-300 group-hover:bg-gray-50 transition-all min-h-[2.5rem] flex items-center ${canEdit ? 'cursor-pointer' : ''}`}
         onClick={() => canEdit && setIsEditing(true)}

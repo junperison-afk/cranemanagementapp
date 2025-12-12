@@ -129,6 +129,9 @@ export default function WorkRecordTable({
                     />
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
+                    作業名
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
                     作業日
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200">
@@ -168,6 +171,16 @@ export default function WorkRecordTable({
                         onChange={(e) => handleSelectOne(record.id, e.target.checked, index)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                       />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Link
+                        href={`/work-records/${record.id}`}
+                        prefetch={true}
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        {workTypeLabels[record.workType]} - {record.equipment.name}
+                        {record.equipment.model && ` (${record.equipment.model})`}
+                      </Link>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {new Date(record.inspectionDate).toLocaleDateString("ja-JP")}

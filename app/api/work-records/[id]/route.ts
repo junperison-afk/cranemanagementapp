@@ -50,6 +50,10 @@ export async function GET(
               select: {
                 id: true,
                 title: true,
+                status: true,
+                startDate: true,
+                endDate: true,
+                amount: true,
               },
             },
           },
@@ -72,7 +76,21 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(inspectionRecord);
+    // Decimal型をnumber型に変換
+    const response = {
+      ...inspectionRecord,
+      equipment: {
+        ...inspectionRecord.equipment,
+        project: inspectionRecord.equipment.project ? {
+          ...inspectionRecord.equipment.project,
+          amount: inspectionRecord.equipment.project.amount && typeof inspectionRecord.equipment.project.amount.toNumber === 'function'
+            ? inspectionRecord.equipment.project.amount.toNumber()
+            : inspectionRecord.equipment.project.amount,
+        } : null,
+      },
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("作業記録詳細取得エラー:", error);
     return NextResponse.json(

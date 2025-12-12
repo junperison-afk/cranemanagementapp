@@ -35,9 +35,21 @@ export async function GET(
           },
         },
         salesOpportunities: {
-          take: 10,
           orderBy: {
-            updatedAt: "desc",
+            createdAt: "asc",
+          },
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            estimatedAmount: true,
+            occurredAt: true,
+            createdAt: true,
+            _count: {
+              select: {
+                quotes: true,
+              },
+            },
           },
         },
         equipment: {
@@ -45,14 +57,33 @@ export async function GET(
           orderBy: {
             updatedAt: "desc",
           },
+          select: {
+            id: true,
+            name: true,
+            model: true,
+            serialNumber: true,
+            location: true,
+          },
         },
         projects: {
-          take: 10,
           orderBy: {
-            updatedAt: "desc",
+            createdAt: "asc",
           },
-          include: {
-            assignedUser: true,
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            startDate: true,
+            endDate: true,
+            amount: true,
+            createdAt: true,
+            assignedUser: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         _count: {
@@ -73,7 +104,24 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(company);
+    // Decimal型をnumber型に変換
+    const response = {
+      ...company,
+      salesOpportunities: company.salesOpportunities.map((so: any) => ({
+        ...so,
+        estimatedAmount: so.estimatedAmount && typeof so.estimatedAmount.toNumber === 'function' 
+          ? so.estimatedAmount.toNumber() 
+          : so.estimatedAmount,
+      })),
+      projects: company.projects.map((project: any) => ({
+        ...project,
+        amount: project.amount && typeof project.amount.toNumber === 'function'
+          ? project.amount.toNumber()
+          : project.amount,
+      })),
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("取引先詳細取得エラー:", error);
     return NextResponse.json(

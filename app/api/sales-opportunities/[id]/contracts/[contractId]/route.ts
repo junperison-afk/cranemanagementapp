@@ -269,3 +269,62 @@ export async function PATCH(
   }
 }
 
+// DELETE: 受注書削除
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string; contractId: string } }
+) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    // 編集者以上の権限が必要
+    if (session.user.role === "VIEWER") {
+      return NextResponse.json(
+        { error: "この操作を実行する権限がありません" },
+        { status: 403 }
+      );
+    }
+
+    // 受注書の存在確認
+    const existingContract = await prisma.contract.findUnique({
+      where: { id: params.contractId },
+    });
+
+    if (!existingContract) {
+      return NextResponse.json(
+        { error: "受注書が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    // 営業案件IDが一致するか確認
+    if (existingContract.salesOpportunityId !== params.id) {
+      return NextResponse.json(
+        { error: "営業案件が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    // 変更履歴を記録
+    await createAuditLog("Contract", params.contractId, "DELETE", {
+      newValue: { deleted: true },
+    });
+
+    // 受注書を削除（明細も自動削除される）
+    await prisma.contract.delete({
+      where: { id: params.contractId },
+    });
+
+    return NextResponse.json({ message: "受注書を削除しました" });
+  } catch (error) {
+    console.error("受注書削除エラー:", error);
+    return NextResponse.json(
+      { error: "受注書の削除に失敗しました" },
+      { status: 500 }
+    );
+  }
+}
+

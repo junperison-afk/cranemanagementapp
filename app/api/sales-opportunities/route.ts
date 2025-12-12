@@ -98,6 +98,11 @@ export async function GET(request: NextRequest) {
               name: true,
             },
           },
+          project: {
+            select: {
+              id: true,
+            },
+          },
           _count: {
             select: {
               quotes: true,
@@ -108,8 +113,14 @@ export async function GET(request: NextRequest) {
       prisma.salesOpportunity.count({ where }),
     ]);
 
+    // Decimal型をnumber型に変換
+    const salesOpportunitiesWithNumberAmount = salesOpportunities.map((so) => ({
+      ...so,
+      estimatedAmount: so.estimatedAmount ? so.estimatedAmount.toNumber() : null,
+    }));
+
     return NextResponse.json({
-      salesOpportunities,
+      salesOpportunities: salesOpportunitiesWithNumberAmount,
       pagination: {
         page,
         limit,

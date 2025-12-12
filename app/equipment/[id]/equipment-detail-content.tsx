@@ -28,6 +28,9 @@ export default async function EquipmentDetailContent({
           id: true,
           title: true,
           status: true,
+          startDate: true,
+          endDate: true,
+          amount: true,
         },
       },
       inspectionRecords: {
@@ -37,10 +40,8 @@ export default async function EquipmentDetailContent({
         },
         select: {
           id: true,
+          workType: true,
           inspectionDate: true,
-          findings: true,
-          summary: true,
-          updatedAt: true,
           user: {
             select: {
               id: true,
@@ -66,6 +67,17 @@ export default async function EquipmentDetailContent({
     );
   }
 
-  return <ClientEquipmentDetail equipment={equipment} canEdit={canEdit} />;
+  // Decimal型をnumber型に変換
+  const response = {
+    ...equipment,
+    project: equipment.project ? {
+      ...equipment.project,
+      amount: equipment.project.amount && typeof equipment.project.amount.toNumber === 'function'
+        ? equipment.project.amount.toNumber()
+        : equipment.project.amount,
+    } : null,
+  };
+
+  return <ClientEquipmentDetail equipment={response} canEdit={canEdit} />;
 }
 

@@ -53,6 +53,7 @@ export default function QuoteDetailModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isQuoteTemplateModalOpen, setIsQuoteTemplateModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 見積データを取得
@@ -88,6 +89,36 @@ export default function QuoteDetailModal({
     setIsEditing(false);
     if (onSuccess) {
       onSuccess();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!quote) return;
+    if (!confirm("この見積を削除しますか？この操作は取り消せません。")) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(
+        `/api/sales-opportunities/${salesOpportunityId}/quotes/${quoteId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("見積の削除に失敗しました");
+      }
+
+      if (onSuccess) {
+        onSuccess();
+      }
+      onClose();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "見積の削除に失敗しました"
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -138,6 +169,13 @@ export default function QuoteDetailModal({
                       className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                     >
                       編集
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 disabled:opacity-50"
+                    >
+                      削除
                     </button>
                   </>
                 )}

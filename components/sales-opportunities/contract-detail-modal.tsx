@@ -50,6 +50,7 @@ export default function ContractDetailModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isContractTemplateModalOpen, setIsContractTemplateModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 受注書データを取得
@@ -85,6 +86,36 @@ export default function ContractDetailModal({
     setIsEditing(false);
     if (onSuccess) {
       onSuccess();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!contract) return;
+    if (!confirm("この受注書を削除しますか？この操作は取り消せません。")) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(
+        `/api/sales-opportunities/${salesOpportunityId}/contracts/${contractId}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("受注書の削除に失敗しました");
+      }
+
+      if (onSuccess) {
+        onSuccess();
+      }
+      onClose();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "受注書の削除に失敗しました"
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -138,6 +169,13 @@ export default function ContractDetailModal({
                     className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                   >
                     編集
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="px-3 py-1.5 text-sm font-medium text-red-700 bg-red-50 rounded-md hover:bg-red-100 disabled:opacity-50"
+                  >
+                    削除
                   </button>
                 </>
               )}

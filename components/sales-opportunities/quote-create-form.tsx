@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
@@ -83,11 +83,14 @@ export default function QuoteCreateForm({
   });
 
   // 明細を監視して合計金額を計算
-  const watchedItems = watch("items");
+  const watchedItems = useWatch({
+    control,
+    name: "items",
+  });
 
   useEffect(() => {
     const total = watchedItems.reduce((sum, item) => {
-      const amount = parseFloat(item.amount || "0");
+      const amount = parseFloat(item?.amount || "0");
       return sum + (isNaN(amount) ? 0 : amount);
     }, 0);
     setTotalAmount(total);
@@ -95,14 +98,17 @@ export default function QuoteCreateForm({
 
   // 数量×単価で金額を自動計算（整数）
   const calculateAmount = (index: number) => {
+    if (!watchedItems || !watchedItems[index]) return;
     const item = watchedItems[index];
-    const quantity = parseFloat(item.quantity || "0");
-    const unitPrice = parseFloat(item.unitPrice || "0");
+    const quantity = parseFloat(item?.quantity || "0");
+    const unitPrice = parseFloat(item?.unitPrice || "0");
 
     if (!isNaN(quantity) && !isNaN(unitPrice) && quantity > 0 && unitPrice > 0) {
       const calculatedAmount = Math.round(quantity * unitPrice);
       setValue(`items.${index}.amount`, calculatedAmount.toString(), {
         shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
       });
     }
   };
@@ -303,6 +309,8 @@ export default function QuoteCreateForm({
                       const intValue = value ? Math.floor(parseFloat(value)) : "";
                       setValue(`items.${index}.amount` as const, intValue.toString(), {
                         shouldValidate: true,
+                        shouldDirty: true,
+                        shouldTouch: true,
                       });
                     }}
                     placeholder="例: 100000"

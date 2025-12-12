@@ -12,6 +12,7 @@ interface InlineEditFieldProps {
   placeholder?: string;
   multiline?: boolean;
   className?: string;
+  formatNumber?: boolean; // 数値をカンマ区切りで表示するか
 }
 
 export default function InlineEditField({
@@ -22,9 +23,30 @@ export default function InlineEditField({
   placeholder,
   multiline = false,
   className = "",
+  formatNumber = false,
 }: InlineEditFieldProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value || "");
+  // 数値フォーマットの場合、編集時はカンマなしの数値、表示時はカンマ区切り
+  const getDisplayValue = (val: string | null | undefined) => {
+    if (!val) return "";
+    if (formatNumber) {
+      const num = parseFloat(val.replace(/,/g, ""));
+      if (isNaN(num)) return val;
+      return num.toLocaleString("ja-JP");
+    }
+    return val;
+  };
+
+  const getEditValue = (val: string | null | undefined) => {
+    if (!val) return "";
+    if (formatNumber) {
+      // カンマを除去して数値のみを返す
+      return val.replace(/,/g, "");
+    }
+    return val;
+  };
+
+  const [editValue, setEditValue] = useState(getEditValue(value));
   const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -37,10 +59,19 @@ export default function InlineEditField({
     }
   }, [isEditing]);
 
+  // valueが変更されたときにeditValueを更新
+  useEffect(() => {
+    if (!isEditing) {
+      setEditValue(getEditValue(value));
+    }
+  }, [value, isEditing]);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await onSave(editValue);
+      // 数値フォーマットの場合、カンマを除去して保存
+      const valueToSave = formatNumber ? editValue.replace(/,/g, "") : editValue;
+      await onSave(valueToSave);
       setIsEditing(false);
     } catch (error) {
       console.error("保存エラー:", error);
@@ -64,7 +95,7 @@ export default function InlineEditField({
   };
 
   const handleCancel = () => {
-    setEditValue(value || "");
+    setEditValue(getEditValue(value));
     setIsEditing(false);
   };
 
@@ -115,7 +146,13 @@ export default function InlineEditField({
               ref={inputRef as React.RefObject<HTMLInputElement>}
               type={type}
               value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
+              onChange={(e) => {
+                // 数値フォーマットの場合、カンマを除去して数値のみを保持
+                const newValue = formatNumber 
+                  ? e.target.value.replace(/,/g, "") 
+                  : e.target.value;
+                setEditValue(newValue);
+              }}
               onKeyDown={handleKeyDown}
               className="flex-1 rounded-md border border-blue-500 px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder={placeholder}
@@ -158,11 +195,11 @@ export default function InlineEditField({
       <div className={`mt-1 px-3 py-2 rounded-md border border-transparent group-hover:border-gray-300 group-hover:bg-gray-50 transition-all min-h-[2.5rem] flex ${multiline ? 'items-start' : 'items-center'}`}>
         {multiline ? (
           <p className="text-sm text-gray-900 whitespace-pre-wrap">
-            {value || <span className="text-gray-400 italic">未設定</span>}
+            {getDisplayValue(value) || <span className="text-gray-400 italic">未設定</span>}
           </p>
         ) : (
           <p className="text-sm text-gray-900">
-            {value || <span className="text-gray-400 italic">未設定</span>}
+            {getDisplayValue(value) || <span className="text-gray-400 italic">未設定</span>}
           </p>
         )}
       </div>
