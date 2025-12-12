@@ -30,6 +30,7 @@
     "@prisma/client": "^5.19.0",
     "@tanstack/react-query": "^5.56.0",
     "@tanstack/react-table": "^8.20.0",
+    "adm-zip": "^0.5.16",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",

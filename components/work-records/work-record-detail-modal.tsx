@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PrinterIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
+import WorkRecordTemplateSelector from "./work-record-template-selector";
 
 interface WorkRecordDetailModalProps {
   isOpen: boolean;
@@ -85,6 +86,28 @@ const JUDGMENT_SYMBOLS = [
   { value: "K", label: "K（経過観察要）" },
 ] as const;
 
+// 処置不良内容の選択肢
+const DEFECT_OPTIONS = [
+  { value: "01", label: "01. 摩耗" },
+  { value: "02", label: "02. 変形" },
+  { value: "03", label: "03. 破損" },
+  { value: "04", label: "04. 亀裂" },
+  { value: "05", label: "05. 傷" },
+  { value: "06", label: "06. 異音" },
+  { value: "07", label: "07. 焼損" },
+  { value: "08", label: "08. 断線" },
+  { value: "09", label: "09. 劣化" },
+  { value: "10", label: "10. 弛み" },
+  { value: "11", label: "11. 脱落" },
+  { value: "12", label: "12. 汚損" },
+  { value: "13", label: "13. 錆" },
+  { value: "14", label: "14. 素線切れ" },
+  { value: "15", label: "15. キンク" },
+  { value: "16", label: "16. 陥没" },
+  { value: "17", label: "17. 腐食" },
+  { value: "18", label: "18. その他" },
+] as const;
+
 // 点検項目の定義（3階層構造）
 const INSPECTION_ITEMS = [
   {
@@ -129,8 +152,8 @@ const INSPECTION_ITEMS = [
         title: "ロードブロック",
         items: [
           { id: "hook_retainer_deform", label: "フック外れ止め金具変形の有無" },
-          { id: "sheave_pin_wear_1", label: "シーブ・ピン摩耗破損の有無" },
-          { id: "sheave_pin_wear_2", label: "シーブ・ピン摩耗破損の有無" },
+          { id: "sheave_pin_wear", label: "シーブ・ピン摩耗破損の有無" },
+          { id: "hook_wear", label: "フック摩耗・疵の有無" },
         ],
       },
     ],
@@ -195,7 +218,6 @@ const INSPECTION_ITEMS = [
         id: "traveling_mechanical",
         title: "走行機械装置",
         items: [
-          { id: "wheel_axle_keep_mechanical", label: "車輪軸キープレート変形・緩みの有無" },
           { id: "traveling_motor_reducer", label: "走行電動減速機異常の有無" },
           { id: "chain_gear_coupling", label: "チェン・ギャー・カップリング軸受摩耗の有無" },
           { id: "lining_wear_mechanical", label: "ライニング摩耗の有無" },
@@ -273,24 +295,17 @@ export default function WorkRecordDetailModal({
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isWorkRecordTemplateModalOpen, setIsWorkRecordTemplateModalOpen] = useState(false);
   
   // 編集用のローカル状態
   const [editFormData, setEditFormData] = useState<{
     workType: string;
     inspectionDate: string;
-    overallJudgment: string | null;
-    documentNumber: string | null;
-    installationFactory: string | null;
-    summary: string | null;
-    additionalNotes: string | null;
+    findings: string | null;
   }>({
     workType: "",
     inspectionDate: "",
-    overallJudgment: null,
-    documentNumber: null,
-    installationFactory: null,
-    summary: null,
-    additionalNotes: null,
+    findings: null,
   });
   
   // 点検結果データをパースして管理
@@ -336,11 +351,7 @@ export default function WorkRecordDetailModal({
       setEditFormData({
         workType: workRecord.workType,
         inspectionDate: new Date(workRecord.inspectionDate).toISOString().split("T")[0],
-        overallJudgment: workRecord.overallJudgment,
-        documentNumber: workRecord.documentNumber,
-        installationFactory: workRecord.installationFactory,
-        summary: workRecord.summary,
-        additionalNotes: workRecord.additionalNotes,
+        findings: workRecord.findings,
       });
       // 点検結果データもコピー
       if (workRecord.checklistData) {
@@ -412,6 +423,38 @@ export default function WorkRecordDetailModal({
     setEditChecklistData(newChecklistData);
   };
 
+  // 処置不良内容の個別項目を更新（ローカルのみ）
+  const handleChecklistDefectChange = (
+    sectionId: string,
+    categoryId: string,
+    itemId: string,
+    value: string
+  ) => {
+    const newChecklistData = { ...editChecklistData };
+    if (!newChecklistData[sectionId]) {
+      newChecklistData[sectionId] = {};
+    }
+    if (!newChecklistData[sectionId][categoryId]) {
+      newChecklistData[sectionId][categoryId] = {};
+    }
+    
+    const defectKey = `${itemId}_defect`;
+    if (value) {
+      newChecklistData[sectionId][categoryId][defectKey] = value;
+    } else {
+      delete newChecklistData[sectionId][categoryId][defectKey];
+      // 空のオブジェクトを削除
+      if (Object.keys(newChecklistData[sectionId][categoryId]).length === 0) {
+        delete newChecklistData[sectionId][categoryId];
+      }
+      if (Object.keys(newChecklistData[sectionId]).length === 0) {
+        delete newChecklistData[sectionId];
+      }
+    }
+    
+    setEditChecklistData(newChecklistData);
+  };
+
   // 一括保存
   const handleSaveAll = async () => {
     if (!canEdit || !workRecord) return;
@@ -429,11 +472,7 @@ export default function WorkRecordDetailModal({
       const requestBody = {
         workType: editFormData.workType,
         inspectionDate: new Date(editFormData.inspectionDate).toISOString(),
-        overallJudgment: editFormData.overallJudgment || null,
-        documentNumber: toNullIfEmpty(editFormData.documentNumber),
-        installationFactory: toNullIfEmpty(editFormData.installationFactory),
-        summary: toNullIfEmpty(editFormData.summary),
-        additionalNotes: toNullIfEmpty(editFormData.additionalNotes),
+        findings: toNullIfEmpty(editFormData.findings),
         checklistData: JSON.stringify(editChecklistData),
       };
 
@@ -501,12 +540,21 @@ export default function WorkRecordDetailModal({
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">作業記録詳細</h2>
             <div className="flex items-center gap-2">
-              {canEdit && (
+              {!isEditing && (
                 <button
-                  onClick={() => setIsEditing(!isEditing)}
+                  onClick={() => setIsWorkRecordTemplateModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100"
+                >
+                  <PrinterIcon className="h-4 w-4" />
+                  作業記録印刷
+                </button>
+              )}
+              {canEdit && !isEditing && (
+                <button
+                  onClick={() => setIsEditing(true)}
                   className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                 >
-                  {isEditing ? "表示" : "編集"}
+                  編集
                 </button>
               )}
               <button
@@ -553,26 +601,6 @@ export default function WorkRecordDetailModal({
                             ))}
                           </select>
                         </div>
-                        {editFormData.workType === "INSPECTION" && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-500 mb-1">
-                              総合判定
-                            </label>
-                            <select
-                              value={editFormData.overallJudgment || ""}
-                              onChange={(e) => handleFormFieldChange("overallJudgment", e.target.value || null)}
-                              disabled={isSaving}
-                              className="w-full rounded-md border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              <option value="">選択してください</option>
-                              {judgmentOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">
                             作業日
@@ -585,54 +613,15 @@ export default function WorkRecordDetailModal({
                             className="w-full rounded-md border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">
-                            整理番号
-                          </label>
-                          <input
-                            type="text"
-                            value={editFormData.documentNumber || ""}
-                            onChange={(e) => handleFormFieldChange("documentNumber", e.target.value || null)}
-                            disabled={isSaving}
-                            placeholder="整理番号を入力"
-                            className="w-full rounded-md border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-500 mb-1">
-                            設置工場
-                          </label>
-                          <input
-                            type="text"
-                            value={editFormData.installationFactory || ""}
-                            onChange={(e) => handleFormFieldChange("installationFactory", e.target.value || null)}
-                            disabled={isSaving}
-                            placeholder="設置工場を入力"
-                            className="w-full rounded-md border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        </div>
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-500 mb-1">
-                            結果サマリ
+                            備考
                           </label>
                           <textarea
-                            value={editFormData.summary || ""}
-                            onChange={(e) => handleFormFieldChange("summary", e.target.value || null)}
+                            value={editFormData.findings || ""}
+                            onChange={(e) => handleFormFieldChange("findings", e.target.value || null)}
                             disabled={isSaving}
-                            placeholder="結果サマリを入力"
-                            rows={3}
-                            className="w-full rounded-md border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          />
-                        </div>
-                        <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-500 mb-1">
-                            追加項目メモ
-                          </label>
-                          <textarea
-                            value={editFormData.additionalNotes || ""}
-                            onChange={(e) => handleFormFieldChange("additionalNotes", e.target.value || null)}
-                            disabled={isSaving}
-                            placeholder="追加項目メモを入力"
+                            placeholder="備考を入力"
                             rows={3}
                             className="w-full rounded-md border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                           />
@@ -656,57 +645,25 @@ export default function WorkRecordDetailModal({
                             {new Date(workRecord.inspectionDate).toLocaleDateString("ja-JP")}
                           </div>
                         </div>
-                        {workRecord.documentNumber && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-500 mb-1">
-                              整理番号
-                            </label>
-                            <div className="text-sm text-gray-900">
-                              {workRecord.documentNumber}
-                            </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-500 mb-1">
+                            備考
+                          </label>
+                          <div className="text-sm text-gray-900 whitespace-pre-wrap">
+                            {workRecord.findings || "-"}
                           </div>
-                        )}
-                        {workRecord.installationFactory && (
+                        </div>
+                        {workRecord.equipment.project && (
                           <div>
                             <label className="block text-sm font-medium text-gray-500 mb-1">
-                              設置工場
+                              該当プロジェクト
                             </label>
                             <div className="text-sm text-gray-900">
-                              {workRecord.installationFactory}
-                            </div>
-                          </div>
-                        )}
-                        {workRecord.summary && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-500 mb-1">
-                              結果サマリ
-                            </label>
-                            <div className="text-sm text-gray-900">
-                              {workRecord.summary}
-                            </div>
-                          </div>
-                        )}
-                        {workRecord.additionalNotes && (
-                          <div>
-                            <label className="block text-sm font-medium text-gray-500 mb-1">
-                              追加項目メモ
-                            </label>
-                            <div className="text-sm text-gray-900">
-                              {workRecord.additionalNotes}
+                              {workRecord.equipment.project.title}
                             </div>
                           </div>
                         )}
                       </>
-                    )}
-                    {workRecord.equipment.project && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-500 mb-1">
-                          該当プロジェクト
-                        </label>
-                        <div className="text-sm text-gray-900">
-                          {workRecord.equipment.project.title}
-                        </div>
-                      </div>
                     )}
                   </div>
                 </div>
@@ -715,9 +672,6 @@ export default function WorkRecordDetailModal({
                 {((isEditing && editFormData.workType === "INSPECTION") || (!isEditing && workRecord.workType === "INSPECTION" && Object.keys(checklistData).length > 0)) && (
                   <div className="bg-gray-50 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">点検結果</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      判定凡例: V…良　△…修理要　×…特急修理要　H…手直し済　P…部品取替済　A…調整済　T…増締済　O…給油脂済　S…清掃済　K…経過観察要
-                    </p>
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="divide-y divide-gray-200">
                         {INSPECTION_ITEMS.map((section, sectionIndex) => {
@@ -747,34 +701,22 @@ export default function WorkRecordDetailModal({
                                     <div className="bg-white divide-y divide-gray-100">
                                       {category.items.map((item, itemIndex) => {
                                         const itemValue = categoryData[item.id] || "";
+                                        const defectValue = categoryData[`${item.id}_defect`] || "";
                                         const symbol = JUDGMENT_SYMBOLS.find((s) => s.value === itemValue);
+                                        const defectOption = DEFECT_OPTIONS.find((d) => d.value === defectValue);
                                         
                                         return (
                                           <div
                                             key={item.id}
-                                            className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 py-1.5"
+                                            className="grid grid-cols-1 md:grid-cols-3 gap-3 px-4 py-2 items-center"
                                           >
                                             <div className="flex items-center">
                                               <span className="text-sm text-gray-700">
                                                 {sectionIndex + 1}-{categoryIndex + 1}-{itemIndex + 1}．{item.label}
                                               </span>
                                             </div>
-                                            <div className="flex items-center">
+                                            <div>
                                               {isEditing && canEdit ? (
-                                                item.id === "insulation_resistance_value" ? (
-                                                  <input
-                                                    type="text"
-                                                    value={itemValue}
-                                                    onChange={(e) => handleChecklistItemChange(
-                                                      section.id,
-                                                      category.id,
-                                                      item.id,
-                                                      e.target.value
-                                                    )}
-                                                    disabled={isSaving}
-                                                    className="w-full rounded-md border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                                  />
-                                                ) : (
                                                   <select
                                                     value={itemValue}
                                                     onChange={(e) => handleChecklistItemChange(
@@ -793,10 +735,35 @@ export default function WorkRecordDetailModal({
                                                       </option>
                                                     ))}
                                                   </select>
-                                                )
                                               ) : (
                                                 <span className="text-sm text-gray-900 font-medium">
                                                   {symbol ? symbol.label : itemValue || "-"}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <div>
+                                              {isEditing && canEdit ? (
+                                                <select
+                                                  value={defectValue}
+                                                  onChange={(e) => handleChecklistDefectChange(
+                                                    section.id,
+                                                    category.id,
+                                                    item.id,
+                                                    e.target.value
+                                                  )}
+                                                  disabled={isSaving}
+                                                  className="w-full rounded-md border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                  <option value="">選択してください</option>
+                                                  {DEFECT_OPTIONS.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                      {option.label}
+                                                    </option>
+                                                  ))}
+                                                </select>
+                                              ) : (
+                                                <span className="text-sm text-gray-900 font-medium">
+                                                  {defectOption ? defectOption.label : "-"}
                                                 </span>
                                               )}
                                             </div>
@@ -839,6 +806,16 @@ export default function WorkRecordDetailModal({
           )}
         </div>
       </div>
+
+      {/* 作業記録印刷モーダル */}
+      <WorkRecordTemplateSelector
+        isOpen={isWorkRecordTemplateModalOpen}
+        onClose={() => setIsWorkRecordTemplateModalOpen(false)}
+        workRecordId={workRecordId}
+        onSuccess={() => {
+          setIsWorkRecordTemplateModalOpen(false);
+        }}
+      />
     </div>
   );
 }
