@@ -493,8 +493,8 @@ export async function POST(request: NextRequest) {
     // ZIPファイルをバッファに変換
     const zipBuffer = zip.toBuffer();
 
-    // ZIPファイルを返す
-    return new NextResponse(zipBuffer, {
+    // ZIPファイルを返す（BufferをUint8Arrayに変換）
+    return new NextResponse(new Uint8Array(zipBuffer), {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${encodeURIComponent("作業記録一括印刷.zip")}"`,
