@@ -69,8 +69,10 @@ export default function SalesOpportunityDetailModal({
   const [isSaving, setIsSaving] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 編集用の一時的な状態
-  const [editData, setEditData] = useState<Partial<SalesOpportunity> | null>(null);
+  // 編集用の一時的な状態（companyIdも保持）
+  const [editData, setEditData] = useState<
+    (Partial<SalesOpportunity> & { companyId?: string }) | null
+  >(null);
 
   // 営業案件データを取得
   useEffect(() => {
@@ -115,7 +117,7 @@ export default function SalesOpportunityDetailModal({
   };
 
   // 編集用データを更新（保存はしない）
-  const handleEditFieldChange = (field: string, value: any) => {
+  const handleEditFieldChange = async (field: string, value: any): Promise<void> => {
     if (!editData) return;
     setEditData({
       ...editData,
