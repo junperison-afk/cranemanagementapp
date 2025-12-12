@@ -91,7 +91,7 @@ export default function UserDetailModal({
   };
 
   // 編集用データを更新（保存はしない）
-  const handleEditFieldChange = (field: string, value: any) => {
+  const handleEditFieldChange = async (field: string, value: any): Promise<void> => {
     if (!editData) return;
     setEditData({
       ...editData,
