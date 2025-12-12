@@ -46,6 +46,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.14.0",
     "@types/pizzip": "^3.0.5",
