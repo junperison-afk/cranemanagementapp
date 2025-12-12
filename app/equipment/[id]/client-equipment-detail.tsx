@@ -440,13 +440,11 @@ export default function ClientEquipmentDetail({
       {selectedWorkRecordId && (
         <WorkRecordDetailModal
           isOpen={!!selectedWorkRecordId}
-          onClose={() => setSelectedWorkRecordId(null)}
-          workRecordId={selectedWorkRecordId}
-          canEdit={canEdit}
-          onSuccess={() => {
-            // モーダルを閉じた後、データを再取得する必要がある場合はここで処理
+          onClose={() => {
+            setSelectedWorkRecordId(null);
             router.refresh();
           }}
+          workRecordId={selectedWorkRecordId}
         />
       )}
     </div>
