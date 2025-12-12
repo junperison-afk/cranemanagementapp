@@ -55,8 +55,10 @@ export default function EquipmentDetailModal({
   const [isSaving, setIsSaving] = useState(false);
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 編集用の一時的な状態
-  const [editData, setEditData] = useState<Partial<Equipment> | null>(null);
+  // 編集用の一時的な状態（会社・プロジェクトIDも保持）
+  const [editData, setEditData] = useState<
+    (Partial<Equipment> & { companyId?: string; projectId?: string | null }) | null
+  >(null);
 
   // 機器データを取得
   useEffect(() => {
@@ -101,7 +103,7 @@ export default function EquipmentDetailModal({
   };
 
   // 編集用データを更新（保存はしない）
-  const handleEditFieldChange = (field: string, value: any) => {
+  const handleEditFieldChange = async (field: string, value: any): Promise<void> => {
     if (!editData) return;
     setEditData({
       ...editData,
