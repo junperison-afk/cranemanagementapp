@@ -75,7 +75,7 @@ export default function ProjectDetailModal({
   const [isUnlinking, setIsUnlinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 編集用の一時的な状態
-  const [editData, setEditData] = useState<Partial<Project> | null>(null);
+  const [editData, setEditData] = useState<Partial<Project> & { companyId?: string } | null>(null);
 
   // プロジェクトデータを取得
   useEffect(() => {
