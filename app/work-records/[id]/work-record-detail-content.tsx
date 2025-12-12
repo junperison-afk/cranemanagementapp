@@ -64,9 +64,12 @@ export default async function WorkRecordDetailContent({
       ...inspectionRecord.equipment,
       project: inspectionRecord.equipment.project ? {
         ...inspectionRecord.equipment.project,
-        amount: inspectionRecord.equipment.project.amount && typeof inspectionRecord.equipment.project.amount.toNumber === 'function'
-          ? inspectionRecord.equipment.project.amount.toNumber()
-          : inspectionRecord.equipment.project.amount,
+        amount: inspectionRecord.equipment.project.amount !== null && typeof inspectionRecord.equipment.project.amount === 'object' && 'toNumber' in inspectionRecord.equipment.project.amount
+          ? (inspectionRecord.equipment.project.amount as any).toNumber()
+          : inspectionRecord.equipment.project.amount !== null
+          ? Number(inspectionRecord.equipment.project.amount)
+          : null,
+        status: String(inspectionRecord.equipment.project.status),
       } : null,
     },
   };
